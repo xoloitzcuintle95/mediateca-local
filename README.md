@@ -77,8 +77,7 @@ tests and daily use. See [AGENTS.md](./AGENTS.md) for the project rules.
 ## Contributing
 
 Issues are welcome. [AGENTS.md](./AGENTS.md) describes the project's rules for
-anyone (human or AI) working on it. Internal working documents
-(`docs/ESTADO.md`) are kept in Spanish.
+anyone (human or AI) working on it.
 
 ## Translations
 

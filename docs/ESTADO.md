@@ -1,192 +1,189 @@
-# Estado del proyecto — Mediateca Local
+# Project state — Mediateca Local
 
-Commit de referencia: **`2ae8fba`** (`chore: pin libcosmic, update README, justfile and docs`), sin commit nuevo. En esta revisión se tradujeron al inglés los documentos públicos (`AGENTS.md`, `PENDIENTES.md`), se añadió la nota de idioma a este documento y la línea correspondiente al README; convención escrita en AGENTS.md: docs públicos en inglés, internos en español. Se decidió no crear wiki: el contenido vive en README/PENDIENTES/ESTADO dentro del repo. Se retiró de `PENDIENTES.md` el punto de `rust-version`/README, ya cumplido. Clippy y `cargo test` (80 tests) pasan.
+Reference commit: **`f043b7c`** (`Translate public docs to English, polish README`), no new commit yet. In this pass this document was translated to English; all in-repo documents are now English-only. It was also decided NOT to create a wiki: all content lives in README/PENDIENTES/ESTADO inside the repo. Clippy and `cargo test` (80 tests) pass.
 
-Límite de este documento: **200 líneas**.
+Limit of this document: **200 lines**.
 
-> Language note: this is an internal working document, kept in Spanish on
-> purpose. Public-facing documents (README, AGENTS.md) are in English.
+## 1. What it is and how to run it
 
-## 1. Qué es y cómo correrla
+A desktop app for COSMIC in Rust + libcosmic. It catalogs local music, video and book files; it never modifies the collection.
 
-App de escritorio para COSMIC en Rust + libcosmic. Cataloga archivos locales de música, video y libros; no modifica la colección.
+- Visible name: **Mediateca Local**
+- Crate/binary: `mediateca-local`
+- ID: `com.xoloitzcuintle95.MediatecaLocal`, defined only in `src/model.rs`
+- Data: `~/.local/share/com.xoloitzcuintle95.MediatecaLocal/catalogo.db`
+- Cache: `~/.cache/com.xoloitzcuintle95.MediatecaLocal/covers/`
+- Configuration: `~/.config/com.xoloitzcuintle95.MediatecaLocal/` (cosmic-config; `catalog_root` empty until a folder is chosen)
 
-- Nombre visible: **Mediateca Local**
-- Crate/binario: `mediateca-local`
-- ID: `com.xoloitzcuintle95.MediatecaLocal`, definido solo en `src/model.rs`
-- Datos: `~/.local/share/com.xoloitzcuintle95.MediatecaLocal/catalogo.db`
-- Caché: `~/.cache/com.xoloitzcuintle95.MediatecaLocal/covers/`
-- Configuración: `~/.config/com.xoloitzcuintle95.MediatecaLocal/` (cosmic-config; `catalog_root` vacío hasta elegir carpeta)
+Commands: `cargo check`, `cargo clippy`, `just build-release`. `just run` is executed by the user, not the agent. The GUI was not opened during this review.
 
-Comandos: `cargo check`, `cargo clippy`, `just build-release`. `just run` lo ejecuta el usuario, no el agente. La GUI no se abrió durante esta revisión.
+## 2. Modules
 
-## 2. Módulos
-
-| Archivo | Líneas | Responsabilidad |
+| File | Lines | Responsibility |
 |---|---:|---|
-| `src/main.rs` | 34 | Arranque, i18n y `cosmic::app::run`. |
-| `src/app.rs` | 1250 | Modelo, mensajes, rutas, selector de carpeta, carga inicial, escaneo, apertura y drawers. |
-| `src/config.rs` | 21 | `catalog_root` en cosmic-config, versión 2; default vacío. |
-| `src/covers.rs` | 744 | Barras, recorte/encaje, miniaturas JPEG v2, caché y límites de portada. |
-| `src/db.rs` | 1451 | SQLite, migraciones, upsert, borrado seguro, alias, enrich de música y EPUB. |
-| `src/epub.rs` | 302 | Lectura de título, autores y portada EPUB con límites, solo lectura. |
-| `src/i18n.rs` | 101 | Carga Fluent; `fl!` y `get(key)`. |
-| `src/library.rs` | 584 | Agrupación musical artista → álbum → canción. |
-| `src/media.rs` | 116 | Tabla única de tipos: extensiones, aspecto, jerarquía, apertura. |
-| `src/model.rs` | 212 | `Kind`, metadata, `MediaItem`, resumen y avisos. |
-| `src/opener.rs` | 93 | Abre una ruta con la app predeterminada; no conoce extensiones. |
-| `src/scanner.rs` | 234 | Recorrido del disco, ocultos, mtime, tamaño y omisión de rutas no UTF-8. |
-| `src/tags.rs` | 372 | Lectura de etiquetas MP3 con lofty y `posix_fadvise(RANDOM)`, solo lectura. |
-| `src/video.rs` | 426 | Parser Serie/Temporada/Episodio y variantes. |
-| `src/ui/mod.rs` | 14 | Fachada de `ui/`: declara módulos y reexporta `CatalogView` y `view`. |
-| `src/ui/root.rs` | 88 | `CatalogView`, estado vacío y despacho de la vista por página. |
-| `src/ui/overview.rs` | 58 | Vista “Todo”: resumen y cuadrícula de álbumes. |
-| `src/ui/music.rs` | 241 | Vistas de artistas, álbumes y canciones. |
-| `src/ui/video.rs` | 466 | Vistas de series, temporadas, episodios y películas. |
-| `src/ui/books.rs` | 94 | Vista de libros en tarjetas 2:3 y búsqueda por título/autor. |
-| `src/ui/cards.rs` | 393 | Tarjetas, cuadrículas, miniaturas y recorte de títulos; incluye sus tests. |
-| `src/ui/common.rs` | 99 | Cabeceras, listas, etiquetas y helpers de búsqueda. |
-| `src/ui/status.rs` | 51 | Avisos y estados de escaneo/apertura. |
+| `src/main.rs` | 34 | Startup, i18n and `cosmic::app::run`. |
+| `src/app.rs` | 1250 | Model, messages, routes, folder picker, initial load, scanning, opening and drawers. |
+| `src/config.rs` | 21 | `catalog_root` in cosmic-config, version 2; empty default. |
+| `src/covers.rs` | 744 | Bars, crop/fit, JPEG thumbnails v2, cache and cover limits. |
+| `src/db.rs` | 1451 | SQLite, migrations, upsert, safe deletion, aliases, music and EPUB enrich. |
+| `src/epub.rs` | 302 | Read-only EPUB title, authors and cover with limits. |
+| `src/i18n.rs` | 101 | Loads Fluent; `fl!` and `get(key)`. |
+| `src/library.rs` | 584 | Music grouping artist → album → track. |
+| `src/media.rs` | 116 | Single table of types: extensions, aspect, hierarchy, opening. |
+| `src/model.rs` | 212 | `Kind`, metadata, `MediaItem`, summary and warnings. |
+| `src/opener.rs` | 93 | Opens a path with the default app; knows nothing about extensions. |
+| `src/scanner.rs` | 234 | Disk traversal, hidden files, mtime, size, skipping non-UTF-8 paths. |
+| `src/tags.rs` | 372 | MP3 tag reading with lofty and `posix_fadvise(RANDOM)`, read-only. |
+| `src/video.rs` | 426 | Series/Season/Episode parser and variants. |
+| `src/ui/mod.rs` | 14 | Facade of `ui/`: declares modules and re-exports `CatalogView` and `view`. |
+| `src/ui/root.rs` | 88 | `CatalogView`, empty state and per-page view dispatch. |
+| `src/ui/overview.rs` | 58 | "All" view: summary and album grid. |
+| `src/ui/music.rs` | 241 | Artists, albums and tracks views. |
+| `src/ui/video.rs` | 466 | Series, seasons, episodes and movies views. |
+| `src/ui/books.rs` | 94 | Books view with 2:3 cards and title/author search. |
+| `src/ui/cards.rs` | 393 | Cards, grids, thumbnails and title cropping; includes its tests. |
+| `src/ui/common.rs` | 99 | Headers, lists, labels and search helpers. |
+| `src/ui/status.rs` | 51 | Notices and scan/open states. |
 
-Los paneles de **detalles** y **alias** no están en `ui/`: viven en `src/app.rs` (`details_content` y `aliases_content`).
+The **details** and **aliases** panels are not in `ui/`: they live in `src/app.rs` (`details_content` and `aliases_content`).
 
-Total: 7444 líneas en `src/`. De ellas, **700 líneas de `db.rs` son tests**, **149 de `epub.rs`**, **66 de `opener.rs`**, **35 de `ui/books.rs`** y **22 de `ui/cards.rs`**.
+Total: 7444 lines in `src/`. Of those, **700 lines of `db.rs` are tests**, **149 of `epub.rs`**, **66 of `opener.rs`**, **35 of `ui/books.rs`** and **22 of `ui/cards.rs`**.
 
 ## 3. SQLite
 
-Esquema actual: **versión 4** (`PRAGMA user_version = 4`). `open_at` migra solo si la versión es menor; en aperturas normales no repite el esquema ni las migraciones. Activa `journal_mode=WAL` y `busy_timeout=5000 ms`.
+Current schema: **version 4** (`PRAGMA user_version = 4`). `open_at` migrates only if the version is lower; on normal opens it does not repeat the schema or the migrations. Enables `journal_mode=WAL` and `busy_timeout=5000 ms`.
 
-Tabla `files`: `id`, `path UNIQUE`, `name`, `kind`, `creator`, `collection_creator`, `collection`, `title`, `track_number`, `track_total`, `filename_track`, `year`, `cover_hash`, `tag_status`, `mtime`, `size`.
+Table `files`: `id`, `path UNIQUE`, `name`, `kind`, `creator`, `collection_creator`, `collection`, `title`, `track_number`, `track_total`, `filename_track`, `year`, `cover_hash`, `tag_status`, `mtime`, `size`.
 
-Tabla `artist_aliases`: `alias` (PK `COLLATE NOCASE`), `canonical`; semilla `iamdoechii → Doechii` solo en la primera migración.
+Table `artist_aliases`: `alias` (PK `COLLATE NOCASE`), `canonical`; seed `iamdoechii → Doechii` only in the first migration.
 
-Índices: `idx_files_kind(kind)`, `idx_files_collection(collection_creator, collection, year)`.
+Indexes: `idx_files_kind(kind)`, `idx_files_collection(collection_creator, collection, year)`.
 
-Migraciones: agrega columnas, renombra `artist→creator`, `album_artist→collection_creator`, `album→collection`, reemplaza el índice viejo. Copia bases/caché desde `com.diegomendoza.Contento` y luego `com.diegomendoza.Catalogo`; no sobrescribe ni borra las anteriores.
+Migrations: add columns, rename `artist→creator`, `album_artist→collection_creator`, `album→collection`, replace the old index. Copies databases/caches from `com.diegomendoza.Contento` and then `com.diegomendoza.Catalogo`; never overwrites or deletes the old ones.
 
-## 4. Flujo de un escaneo
+## 4. Flow of a scan
 
-1. `init` lanza `db::load_cached` en `spawn_blocking` solo si `catalog_root` no está vacía.
-2. Al llegar `CachedLoaded`, se pintan items, biblioteca, alias y video guardados.
-3. Si hay raíz, se emite `ScanRequested`: la UI conserva lo guardado y muestra “Escaneando…”. Si la raíz está vacía, no se escanea y se muestra el estado vacío con el selector de carpeta.
-4. `db_path` copia la base legacy si la nueva no existe; `open_at` migra solo si hace falta.
-5. `readable_root` valida la raíz; si falla, no escribe y devuelve lo guardado con aviso.
-6. `scanner::scan` recorre con WalkDir, poda ocultos (`.Trash-1000` incluida), clasifica y guarda mtime/tamaño.
-7. `enrich_items` reparte música y EPUB en un pool de máximo 4 hilos. Si mtime/tamaño no cambiaron y `cover_ready`, reutiliza metadata; si no, lee etiquetas o rbook y genera miniatura. Cada archivo va dentro de `catch_unwind`: un panic se convierte en `TagStatus::Error` para ese archivo y no aborta el escaneo. Los PDF se quedan solo con el nombre.
-8. Una transacción hace upsert por `path`; borra ausentes solo si el escaneo fue completo, no quedó vacío con filas previas bajo la raíz y las rutas están bajo la raíz.
-9. Se recargan filas, se marcan portadas listas y se construye `Library`; la app construye `VideoLibrary`.
-10. `ScanFinished` actualiza la UI.
+1. `init` launches `db::load_cached` in `spawn_blocking` only if `catalog_root` is not empty.
+2. When `CachedLoaded` arrives, saved items, library, aliases and video are painted.
+3. If there is a root, `ScanRequested` is emitted: the UI keeps what was saved and shows "Scanning…". If the root is empty, no scan happens and the empty state with the folder picker is shown.
+4. `db_path` copies the legacy database if the new one does not exist; `open_at` migrates only if needed.
+5. `readable_root` validates the root; on failure it writes nothing and returns the saved data with a warning.
+6. `scanner::scan` traverses with WalkDir, prunes hidden files (`.Trash-1000` included), classifies and records mtime/size.
+7. `enrich_items` distributes music and EPUB over a pool of at most 4 threads. If mtime/size did not change and `cover_ready`, it reuses metadata; otherwise it reads tags or rbook and generates a thumbnail. Every file runs inside `catch_unwind`: a panic becomes `TagStatus::Error` for that file and does not abort the scan. PDFs keep only the file name.
+8. One transaction upserts by `path`; deletes missing rows only if the scan was complete, did not end up empty with prior rows under the root, and the paths are under the root.
+9. Rows are reloaded, covers are marked ready and `Library` is built; the app builds `VideoLibrary`.
+10. `ScanFinished` updates the UI.
 
-Regla `EmptyRoot`: si el escaneo no encuentra ningún archivo catalogable y la base tiene filas bajo la raíz, se guardan los hallazgos (cero) pero **no se borra nada** y se devuelve `ScanWarning::EmptyRoot`; la UI lo muestra igual que `RootUnavailable`. Limitación: si el usuario vació la carpeta a propósito, las filas se quedan y el aviso se repite hasta que exista la limpieza de faltantes.
+`EmptyRoot` rule: if the scan finds no catalogable file and the database has rows under the root, the findings (zero) are saved but **nothing is deleted** and `ScanWarning::EmptyRoot` is returned; the UI shows it the same as `RootUnavailable`. Limitation: if the user emptied the folder on purpose, the rows stay and the warning repeats until missing-row cleanup exists.
 
-## 5. Reglas de AGENTS.md
+## 5. Rules from AGENTS.md
 
-- Partir del template; verificar APIs de libcosmic antes de usarlas.
-- `cargo check` tras cada cambio; al cerrar, `cargo clippy` y pruebas. `just run` lo ejecuta el usuario, no el agente.
-- No agregar dependencias sin explicar para qué.
-- La app solo lee la colección; miniaturas solo en caché XDG.
-- La app no hace peticiones de red. Lee etiquetas y portadas únicamente de los archivos locales.
-- lofty solo lectura.
-- Cada tipo de medio se define en un solo lugar (extensiones, aspecto, niveles, apertura).
-- Widgets/tema de libcosmic, sin colores fijos; iconos simbólicos.
-- **MVU** (Model-View-Update): lógica en `update`, UI no bloqueante, SQLite en XDG.
-- Rendimiento: releer solo archivos nuevos o con mtime/tamaño cambiados; reutilizar miniaturas; trabajo fuera del hilo UI.
+- Start from the template; verify libcosmic APIs before using them.
+- `cargo check` after every change; at close, `cargo clippy` and tests. `just run` is executed by the user, not the agent.
+- Don't add dependencies without explaining why.
+- The app only reads the collection; thumbnails only in the XDG cache.
+- The app makes no network requests. It reads tags and covers only from local files.
+- lofty read-only.
+- Each media type is defined in one place (extensions, aspect, levels, opening).
+- libcosmic widgets/theme, no hardcoded colors; symbolic icons.
+- **MVU** (Model-View-Update): logic in `update`, non-blocking UI, SQLite in XDG.
+- Performance: re-read only new files or ones with changed mtime/size; reuse thumbnails; work off the UI thread.
 
-## 6. Decisiones tomadas
+## 6. Decisions made
 
-- **Solo lectura / sin red:** nunca se escribe en la colección; lofty y rbook se usan solo para leer; no hay clientes HTTP.
-- **Portadas:** se detectan barras comparando con el color del borde (tolerancia 12/255). En la inspección inicial, 31/31 tenían barras de 276–280 px e interior 720–728×720. Música 1:1 (512×512); sin barras, `fit`; video/libros 2:3 (512×768). Caché v2; v1 16:9 sin uso. La portada de libro sube ~50 % de píxeles frente a la cuadrada (393,216 vs 262,144); no se optimizó. Todas las fuentes pasan por `covers::ensure_thumbnail`, que rechaza más de 8 MiB o más de 8 MP antes de hashear o decodificar, exige dimensiones mayores que cero y usa `ImageReader` con límites. `local_cover` comprueba el tamaño con `fs::metadata` antes de leer el archivo. La portada incrustada de música ya fue cargada en memoria por lofty; el filtro evita la segunda copia, pero no puede evitar esa carga previa.
-- **EPUB:** `rbook 0.7.12` sin features; lectura de título, autores y portada. Portada limitada a 8 MiB y 8 MP; EPUB corrupto o sin metadatos usa el nombre del archivo y `TagStatus::Error`/`Missing`. `catch_unwind` aísla posibles panics. `creator` guarda el autor y `title` el título; sin cambio de esquema.
-- **Alias:** tabla editable, sin distinguir mayúsculas; se aplican al agrupar por `collection_creator`.
-- **Tipos de medio:** `src/media.rs` es la única fuente de extensiones, aspecto, jerarquía y `OpenAction`.
-- **Carpeta del catálogo:** raíz única editable desde “Ver → Carpeta del catálogo…” o desde el estado vacío. Se usa `cosmic::dialog::file_chooser`; se guarda con `write_entry` y el `watch_config` existente dispara el escaneo. Se rechazan las rutas no UTF-8, `/` y la carpeta personal completa con `ScanWarning::InvalidCatalogRoot`. Las rutas no UTF-8 dentro de la colección se omiten y cuentan como error de recorrido, así que el escaneo queda incompleto y no borra filas. Cambiar de raíz no borra filas de la raíz anterior.
-- **Sin raíz:** `catalog_root` vacío; no se carga caché, no se escanea y la vista muestra “Elige la carpeta de tu catálogo”.
-- **Bug corregido del selector:** con `XDG_CONFIG_HOME` temporal, `watch_config` usa el daemon de configuración por DBus (feature `dbus-config`), que observa la configuración real; el archivo se guardaba en la ruta temporal pero no llegaba `UpdateConfig`. No es un fallo de usuarios nuevos: es un artefacto de probar con una config XDG aislada. Ahora, tras guardar con éxito, la app actualiza la config en memoria y pide el escaneo; un `UpdateConfig` con la misma raíz no lo duplica. Para probar el primer escaneo, cambiar solo `XDG_DATA_HOME` y `XDG_CACHE_HOME`; con `XDG_CONFIG_HOME` temporal el daemon de DBus no ve la config.
-- **Apertura:** `media.rs` decide la `OpenAction`; `src/opener.rs` solo ejecuta `open::that_detached(&Path)` en `spawn_blocking`, rechaza rutas relativas y convierte el fallo en un aviso. `LaunchUrl` solo abre URLs que empiezan por `https://` con destino no vacío. El enlace de repositorio del About se omite mientras `CARGO_PKG_REPOSITORY` siga siendo el TODO.
-- **Interacción:** un clic en una canción, episodio o libro abre el panel de detalles tras 400 ms; el doble clic abre el archivo sin mostrar ni dejar abierto el panel; el botón Abrir del panel usa el mismo `OpenItem`.
-- **Panel de detalles:** se acopla al lado del contenido (`context_is_overlay = false`). La causa del bug era que, como overlay, libcosmic capturaba todos los clics del contenido y el breadcrumb nunca recibía `GoToArtists`; por eso no se podía regresar con el panel abierto. En ventanas angostas el contenido se encoge.
-- **Tarjetas:** altura uniforme fija; título 2 líneas con elipsis, creador 1, metadato 1. No se mide la más alta; iced no ofrece altura máxima de fila. Cuadrícula responsive con ancho fijo y espacio repartido; respaldo en `PENDIENTES.md`.
-- **Video:** nombre como única fuente; `SxxEyy`; variantes del mismo episodio agrupadas; películas sin patrón aparte; iconos, no pósters.
-- **Columnas genéricas:** `creator` y `collection` sustituyen a `artist`/`album` en modelo y SQLite.
-- **Optimización:** `cover_ready` evita `fs::metadata` por tarjeta; las claves de búsqueda se precalculan en minúsculas; una sola conexión para alias; pool de miniaturas.
-- **Deuda:** `ScanWarning` cubre escaneo, apertura y raíz inválida; el nombre ya no es exacto y renombrarlo queda pendiente.
+- **Read-only / no network:** the collection is never written to; lofty and rbook are used only for reading; no HTTP clients.
+- **Covers:** bars are detected by comparing with the border color (tolerance 12/255). In the initial inspection, 31/31 had 276–280 px bars and a 720–728×720 interior. Music 1:1 (512×512); without bars, `fit`; video/books 2:3 (512×768). Cache v2; v1 16:9 unused. The book cover moves ~50% more pixels than the square one (393,216 vs 262,144); not optimized. All sources go through `covers::ensure_thumbnail`, which rejects more than 8 MiB or 8 MP before hashing or decoding, requires dimensions greater than zero and uses a limits-capped `ImageReader`. `local_cover` checks the size with `fs::metadata` before reading the file. Music's embedded cover was already loaded into memory by lofty; the filter avoids the second copy but cannot avoid that first load.
+- **EPUB:** `rbook 0.7.12` with no features; reads title, authors and cover. Cover limited to 8 MiB and 8 MP; a corrupt or metadata-less EPUB falls back to the file name and `TagStatus::Error`/`Missing`. `catch_unwind` isolates possible panics. `creator` stores the author and `title` the title; no schema change.
+- **Aliases:** editable table, case-insensitive; applied when grouping by `collection_creator`.
+- **Media types:** `src/media.rs` is the single source of extensions, aspect, hierarchy and `OpenAction`.
+- **Catalog folder:** single editable root from "View → Catalog folder…" or from the empty state. Uses `cosmic::dialog::file_chooser`; saved with `write_entry` and the existing `watch_config` triggers the scan. Non-UTF-8 paths, `/` and the whole home folder are rejected with `ScanWarning::InvalidCatalogRoot`. Non-UTF-8 paths inside the collection are skipped and count as traversal errors, so the scan is incomplete and deletes no rows. Changing the root does not delete rows of the previous root.
+- **No root:** empty `catalog_root`; no cache load, no scan, and the view shows "Choose the folder of your catalog".
+- **Picker bug fixed:** with a temporary `XDG_CONFIG_HOME`, `watch_config` uses the configuration daemon over DBus (feature `dbus-config`), which watches the real configuration; the file was saved to the temporary path but no `UpdateConfig` arrived. Not a failure for new users: it is an artifact of testing with an isolated XDG config. Now, after a successful save, the app updates the config in memory and requests the scan; an `UpdateConfig` with the same root does not duplicate it. To test the first scan, change only `XDG_DATA_HOME` and `XDG_CACHE_HOME`; with a temporary `XDG_CONFIG_HOME` the DBus daemon does not see the config.
+- **Opening:** `media.rs` decides the `OpenAction`; `src/opener.rs` only runs `open::that_detached(&Path)` in `spawn_blocking`, rejects relative paths and turns failure into a notice. `LaunchUrl` only opens URLs that start with `https://` with a non-empty destination. The About repository link is omitted while `CARGO_PKG_REPOSITORY` is still the TODO.
+- **Interaction:** a single click on a track, episode or book opens the details panel after 400 ms; double click opens the file without showing or leaving the panel open; the panel's Open button uses the same `OpenItem`.
+- **Details panel:** it docks beside the content (`context_is_overlay = false`). The cause of the bug was that, as an overlay, libcosmic captured every click of the content and the breadcrumb never received `GoToArtists`; that is why going back was impossible with the panel open. In narrow windows the content shrinks.
+- **Cards:** fixed uniform height; title 2 lines with ellipsis, creator 1, metadata 1. The tallest is not measured; iced offers no max row height. Responsive grid with fixed width and space distributed; fallback in `PENDIENTES.md`.
+- **Video:** file name as the only source; `SxxEyy`; variants of the same episode grouped; movies with no separate pattern; icons, not posters.
+- **Generic columns:** `creator` and `collection` replace `artist`/`album` in the model and SQLite.
+- **Optimization:** `cover_ready` avoids `fs::metadata` per card; search keys are precomputed lowercase; a single connection for aliases; thumbnail pool.
+- **Debt:** `ScanWarning` covers scan, opening and invalid root; the name is no longer exact and renaming it is pending.
 
-## 7. Lo que NO está hecho
+## 7. What is NOT done
 
-Copiado de `PENDIENTES.md`:
+Copied from `PENDIENTES.md`:
 
-- Comprobar visualmente la cuadrícula responsive en ventanas muy anchas y muy angostas. Si el reparto de columnas no funciona bien en algún caso, usar el respaldo `FlexRow` con `SpaceBetween` y anotarlo aquí.
-- Revisar el recorte de barras con portadas nuevas de fondos uniformes claros.
-- Confirmar en pantalla que las dos variantes de `S29E03` se ven bajo el mismo episodio con etiqueta.
-- Visores/reproductores propios: no se implementarán; apertura externa.
-- Revisar miniaturas viejas v1 (16:9) sin uso.
+- Visually check the responsive grid in very wide and very narrow windows. If the column split fails in some case, use the `FlexRow` with `SpaceBetween` fallback and note it here.
+- Check bar cropping with new covers that have light uniform backgrounds.
+- Confirm on screen that both `S29E03` variants show under the same episode with their label.
+- Built-in viewers/players: will not be implemented; opening stays external.
+- Review old v1 thumbnails (16:9) unused in the cache.
 
-Además, `PENDIENTES.md` tiene nueve puntos marcados “sin verificar”: portada local por directorio, cambio de `cover.jpg`, TPE2 para agrupar, reintento de etiquetas con error, `rust-version`/README, features de `tokio`, pósters de película, carrera de 8 hilos y filtro/JPEG más rápido.
+Also, `PENDIENTES.md` has nine points marked "unverified": local per-directory cover, `cover.jpg` change detection, TPE2 grouping, retrying failed tags, `tokio` features, movie posters, the 8-thread race, and the faster filter/JPEG. (The `rust-version`/README point was completed and removed.)
 
-## 8. Dependencias
+## 8. Dependencies
 
-| Dependencia | Versión | Uso |
+| Dependency | Version | Use |
 |---|---|---|
-| `dirs` | 7 | Rutas XDG de datos/caché. |
-| `i18n-embed` | 0.16 | Traducciones Fluent. |
-| `i18n-embed-fl` | 0.10 | Macro `fl!`. |
-| `image` | 0.25.10 | Decodificar PNG/JPEG y escribir miniaturas. |
-| `lofty` | 0.25.5 | Etiquetas y portadas MP3, solo lectura. |
-| `rbook` | 0.7.12 (sin features) | Título, autores y portada EPUB, solo lectura. |
-| `open` | 5.4.5 | Abrir archivos con la app predeterminada (`that_detached`); también URL del repositorio en About. |
-| `rusqlite` | 0.41 (`bundled`) | SQLite embebido. |
-| `rust-embed` | 8.8.0 | Traducciones embebidas. |
-| `rustix` | 1.1.6 (`fs`, solo Linux) | `posix_fadvise(RANDOM)` al leer etiquetas; sin `unsafe`. |
-| `sha2` | 0.11.1 | Hash de portadas. |
-| `tokio` | 1.48 (`full`) | `spawn_blocking` y runtime. |
-| `walkdir` | 2.5 | Recorrido con poda. |
-| `libcosmic` | git master | UI, tema, Application, config. |
-| `xdgen` (build) | 0.1 | `.desktop` y metainfo. |
+| `dirs` | 7 | XDG data/cache paths. |
+| `i18n-embed` | 0.16 | Fluent translations. |
+| `i18n-embed-fl` | 0.10 | `fl!` macro. |
+| `image` | 0.25.10 | Decode PNG/JPEG and write thumbnails. |
+| `lofty` | 0.25.5 | MP3 tags and covers, read-only. |
+| `rbook` | 0.7.12 (no features) | EPUB title, authors and cover, read-only. |
+| `open` | 5.4.5 | Open files with the default app (`that_detached`); also the repository URL in About. |
+| `rusqlite` | 0.41 (`bundled`) | Embedded SQLite. |
+| `rust-embed` | 8.8.0 | Embedded translations. |
+| `rustix` | 1.1.6 (`fs`, Linux only) | `posix_fadvise(RANDOM)` when reading tags; no `unsafe`. |
+| `sha2` | 0.11.1 | Cover hashing. |
+| `tokio` | 1.48 (`full`) | `spawn_blocking` and runtime. |
+| `walkdir` | 2.5 | Traversal with pruning. |
+| `libcosmic` | git master | UI, theme, Application, config. |
+| `xdgen` (build) | 0.1 | `.desktop` and metainfo. |
 
-`zip` 9 es solo dev-dependency para generar EPUB de prueba.
+`zip` 9 is a dev-dependency only, to generate a test EPUB.
 
-Empaquetado: `build.rs` genera `target/xdgen/app.desktop` y `app.metainfo.xml`; `just install` los renombra al ID, instala el icono en `share/icons/hicolor/scalable/apps/com.xoloitzcuintle95.MediatecaLocal.svg` y el metainfo en `share/metainfo/`. `appstreamcli validate --no-net` queda con la alerta `url-homepage-missing` porque la URL del repositorio es un TODO; `desktop-file-validate` pasa.
+Packaging: `build.rs` generates `target/xdgen/app.desktop` and `app.metainfo.xml`; `just install` renames them to the ID, installs the icon at `share/icons/hicolor/scalable/apps/com.xoloitzcuintle95.MediatecaLocal.svg` and the metainfo at `share/metainfo/`. `appstreamcli validate --no-net` keeps the `url-homepage-missing` alert because the repository URL is a TODO; `desktop-file-validate` passes.
 
-## 9. Rendimiento antes/después
+## 9. Performance before/after
 
-Mediciones con **base y caché temporales**, release, 292 pistas, 3 videos y 208 portadas únicas. La colección vive en un disco **rotacional** (`/dev/sda1`, `ROTA=1`), así que el costo dominante es el tiempo de búsqueda.
+Measurements with **temporary database and cache**, release, 292 tracks, 3 videos and 208 unique covers. The collection lives on a **spinning disk** (`/dev/sda1`, `ROTA=1`), so seek time dominates.
 
-| Escenario | Antes | Después |
+| Scenario | Before | After |
 |---|---:|---:|
-| Primer escaneo, caché vacío | **39.08 s** | **26.46 s** |
-| Segundo escaneo | **17.15 ms** | **22.43 ms** |
-| Tags leídos / reutilizados (2.º) | 292 / 292 | 292 / 292 |
-| Miniaturas v2 generadas | 208 | 208 |
+| First scan, empty cache | **39.08 s** | **26.46 s** |
+| Second scan | **17.15 ms** | **22.43 ms** |
+| Tags read / reused (2nd) | 292 / 292 | 292 / 292 |
+| v2 thumbnails generated | 208 | 208 |
 
-La mejora del primer escaneo fue ~32 %. El segundo es ruido de medición (~ms).
+The first-scan improvement was ~32%. The second scan is measurement noise (~ms).
 
-**`fadvise` (solo Linux):** lofty ya leía solo el tag, pero el *readahead* del kernel traía ~5,6× más datos: **1 088 → 195 MiB** con `POSIX_FADV_RANDOM`. Aun así la mejora de pared es moderada porque persisten las búsquedas aleatorias. **Medición fría del usuario con 4 hilos: ~22,6 s contra ~26,5 s originales (~15 %).** El cuello restante es el tiempo de búsqueda del disco. El **progreso de la primera importación sigue pendiente**.
+**`fadvise` (Linux only):** lofty already read only the tag, but kernel *readahead* pulled ~5.6× more data: **1,088 → 195 MiB** with `POSIX_FADV_RANDOM`. Still, the wall-clock gain is moderate because random seeks persist. **User's cold measurement with 4 threads: ~22.6 s vs ~26.5 s originally (~15%).** The remaining bottleneck is disk seek time. **First-import progress is still pending.**
 
-`cargo build --release` incremental: ~28 s. `cargo check`, `cargo clippy --all-targets -- -D warnings` y **80 tests** pasan.
+Incremental `cargo build --release`: ~28 s. `cargo check`, `cargo clippy --all-targets -- -D warnings` and **80 tests** pass.
 
-Mediciones del usuario con el binario release y la GUI abierta, **puntuales**:
+User measurements with the release binary and the GUI open, **point-in-time**:
 
-- CPU en reposo: **0 ticks en 30 s**.
-- RSS al abrir: **~209 MB** con 292 pistas y 208 portadas.
-- RSS tras navegar: **~208 MB**. Sin crecimiento observado.
-- Navegación probada: música → artistas → álbumes → canciones → volver; después videos; después libros; después otra vez música.
-- Referencia aproximada: COSMIC Files usa **~148 MB**.
-- Es **una sola sesión** de prueba: una muestra tras navegar, sin crecimiento observado; no prueba formal.
+- CPU at rest: **0 ticks in 30 s**.
+- RSS at open: **~209 MB** with 292 tracks and 208 covers.
+- RSS after browsing: **~208 MB**. No growth observed.
+- Navigation tested: music → artists → albums → tracks → back; then videos; then books; then music again.
+- Rough reference: COSMIC Files uses **~148 MB**.
+- It is **a single test session**: one sample after browsing, no growth observed; not a formal benchmark.
 
-La medición anterior de **4.40 s** (200 pistas, 31 lecturas, 144 miniaturas) **no era un primer escaneo**: fue un escaneo incremental sobre la base y el caché reales, con solo 31 archivos nuevos/cambiados y 144 miniaturas escritas. No es comparable con las cifras de arriba. Al medir hoy: 292 pistas, 3 videos, 0 libros y 208 portadas únicas; el número real puede cambiar si el disco cambia.
+The earlier **4.40 s** measurement (200 tracks, 31 reads, 144 thumbnails) **was not a first scan**: it was an incremental scan over the real database and cache, with only 31 new/changed files and 144 thumbnails written. It is not comparable with the figures above. Measured today: 292 tracks, 3 videos, 0 books and 208 unique covers; the real number can change if the disk changes.
 
-## Verificado
+## Verified
 
-- Aviso de fallo al abrir sin lanzadores disponibles: apareció y la app no se congeló.
-- `xdg-open` real abrió un archivo con un nombre raro.
+- Open-failure notice when no launchers are available: it appeared and the app did not freeze.
+- Real `xdg-open` opened a file with a weird name.
 
-## No verificado
+## Not verified
 
-- Tiempo desde abrir la GUI hasta ver contenido: no medido. CPU en reposo y RSS (al abrir y tras navegar) ya fueron medidos por el usuario; ver §9.
-- Apariencia real/responsive y variantes de `S29E03` en pantalla.
-- Selector de carpeta, portal XDG y estado vacío en la GUI.
-- Escritura real en cosmic-config desde el selector (la transición en memoria sí está probada).
-- Clic real en el breadcrumb con el panel de detalles acoplado (solo verificado en código y con prueba de `update`).
-- EPUB reales con estructuras raras y los límites de portada en la GUI.
-- Icono renderizado en el escritorio real y la URL definitiva del repositorio.
-- Migración de configuración entre IDs (solo base y caché).
+- Time from opening the GUI to seeing content: not measured. CPU at rest and RSS (at open and after browsing) were already measured by the user; see §9.
+- Real/responsive appearance and the `S29E03` variants on screen.
+- Folder picker, XDG portal and empty state in the GUI.
+- Real writes to cosmic-config from the picker (the in-memory transition is tested).
+- Real click on the breadcrumb with the details panel docked (only verified in code and with an `update` test).
+- Real EPUBs with odd structures and the cover limits in the GUI.
+- Icon rendered on the real desktop and the final repository URL.
+- Configuration migration between IDs (only database and cache).

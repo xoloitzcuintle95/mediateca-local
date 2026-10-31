@@ -3,8 +3,7 @@
 A desktop app for COSMIC (Pop!_OS 24.04) in Rust with libcosmic. It catalogs
 local files (video, music, books) and opens them with the system's default
 application. The project owner is a beginner: explain changes simply and keep
-them small. Public-facing documents are written in English; internal working
-documents (`docs/ESTADO.md`) stay in Spanish.
+them small. All in-repo documents are written in English.
 
 ## Working rules
 - ALWAYS start from the template's code. Before using any libcosmic API, look
