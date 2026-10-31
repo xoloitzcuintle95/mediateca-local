@@ -10,6 +10,9 @@
     <p>No modifica la colección y no hace peticiones de red.</p>
   </description>
   <icon type="stock">com.xoloitzcuintle95.MediatecaLocal</icon>
+  <developer id="io.github.xoloitzcuintle95">
+    <name>xoloitzcuintle95</name>
+  </developer>
   <url type="homepage">https://github.com/xoloitzcuintle95/mediateca-local</url>
   <launchable type="desktop-id">com.xoloitzcuintle95.MediatecaLocal.desktop</launchable>
   <provides>
@@ -34,5 +37,8 @@
     <keyword>catalog</keyword>
   </keywords>
   <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-10-31"/>
+  </releases>
 </component>
 
