@@ -13,6 +13,9 @@ finish-args:
   - --socket=fallback-x11
   # wgpu/iced rendering.
   - --device=dri
+  # The catalog scans user media folders, which can live anywhere under $HOME
+  # and on mounted volumes, so the sandbox needs broad filesystem access.
+  - --filesystem=host
   # cosmic-config stores the catalog root in $HOME/.config, which is ephemeral
   # inside the sandbox. Persisting it keeps the choice across launches
   # (~/.var/app/<app-id>/.config instead of the host ~/.config).

@@ -15,3 +15,5 @@ debian/*
 TRASPASO_OPENCODE.md
 ANALISIS_DETALLADO.md
 .hermes/
+.flatpak-builder/
+build-dir/
