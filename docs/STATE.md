@@ -1,6 +1,6 @@
 # Project state — Mediateca Local
 
-Reference commit: **`f043b7c`** (`Translate public docs to English, polish README`), no new commit yet. In this pass this document was translated to English; all in-repo documents are now English-only. It was also decided NOT to create a wiki: all content lives in README/PENDIENTES/ESTADO inside the repo. Clippy and `cargo test` (80 tests) pass.
+Reference commit: **`f043b7c`** (`Translate public docs to English, polish README`), no new commit yet. In this pass this document was translated to English; all in-repo documents are now English-only. It was also decided NOT to create a wiki: all content lives in README/TODO/STATE inside the repo. Clippy and `cargo test` (80 tests) pass.
 
 Limit of this document: **200 lines**.
 
@@ -102,7 +102,7 @@ Migrations: add columns, rename `artist→creator`, `album_artist→collection_c
 - **Opening:** `media.rs` decides the `OpenAction`; `src/opener.rs` only runs `open::that_detached(&Path)` in `spawn_blocking`, rejects relative paths and turns failure into a notice. `LaunchUrl` only opens URLs that start with `https://` with a non-empty destination. The About repository link is omitted while `CARGO_PKG_REPOSITORY` is still the TODO.
 - **Interaction:** a single click on a track, episode or book opens the details panel after 400 ms; double click opens the file without showing or leaving the panel open; the panel's Open button uses the same `OpenItem`.
 - **Details panel:** it docks beside the content (`context_is_overlay = false`). The cause of the bug was that, as an overlay, libcosmic captured every click of the content and the breadcrumb never received `GoToArtists`; that is why going back was impossible with the panel open. In narrow windows the content shrinks.
-- **Cards:** fixed uniform height; title 2 lines with ellipsis, creator 1, metadata 1. The tallest is not measured; iced offers no max row height. Responsive grid with fixed width and space distributed; fallback in `PENDIENTES.md`.
+- **Cards:** fixed uniform height; title 2 lines with ellipsis, creator 1, metadata 1. The tallest is not measured; iced offers no max row height. Responsive grid with fixed width and space distributed; fallback in `TODO.md`.
 - **Video:** file name as the only source; `SxxEyy`; variants of the same episode grouped; movies with no separate pattern; icons, not posters.
 - **Generic columns:** `creator` and `collection` replace `artist`/`album` in the model and SQLite.
 - **Optimization:** `cover_ready` avoids `fs::metadata` per card; search keys are precomputed lowercase; a single connection for aliases; thumbnail pool.
@@ -110,7 +110,7 @@ Migrations: add columns, rename `artist→creator`, `album_artist→collection_c
 
 ## 7. What is NOT done
 
-Copied from `PENDIENTES.md`:
+Copied from `TODO.md`:
 
 - Visually check the responsive grid in very wide and very narrow windows. If the column split fails in some case, use the `FlexRow` with `SpaceBetween` fallback and note it here.
 - Check bar cropping with new covers that have light uniform backgrounds.
@@ -118,7 +118,7 @@ Copied from `PENDIENTES.md`:
 - Built-in viewers/players: will not be implemented; opening stays external.
 - Review old v1 thumbnails (16:9) unused in the cache.
 
-Also, `PENDIENTES.md` has nine points marked "unverified": local per-directory cover, `cover.jpg` change detection, TPE2 grouping, retrying failed tags, `tokio` features, movie posters, the 8-thread race, and the faster filter/JPEG. (The `rust-version`/README point was completed and removed.)
+Also, `TODO.md` has nine points marked "unverified": local per-directory cover, `cover.jpg` change detection, TPE2 grouping, retrying failed tags, `tokio` features, movie posters, the 8-thread race, and the faster filter/JPEG. (The `rust-version`/README point was completed and removed.)
 
 ## 8. Dependencies
 
