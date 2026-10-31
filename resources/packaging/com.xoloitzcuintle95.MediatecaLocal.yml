@@ -1,0 +1,51 @@
+app-id: com.xoloitzcuintle95.MediatecaLocal
+runtime: org.freedesktop.Platform
+runtime-version: "25.08"
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: mediateca-local
+finish-args:
+  # COSMIC/libcosmic (iced) needs shared memory for its IPC surface.
+  - --share=ipc
+  # Native Wayland with an X11 fallback for other desktops.
+  - --socket=wayland
+  - --socket=fallback-x11
+  # wgpu/iced rendering.
+  - --device=dri
+  # cosmic-config stores the catalog root in $HOME/.config, which is ephemeral
+  # inside the sandbox. Persisting it keeps the choice across launches
+  # (~/.var/app/<app-id>/.config instead of the host ~/.config).
+  - --persist=.config
+modules:
+  - name: mediateca-local
+    buildsystem: simple
+    build-commands:
+      - cargo build --release --locked
+      - install -Dm755 target/release/mediateca-local /app/bin/mediateca-local
+      # build.rs expands these into target/xdgen/ with the final application ID.
+      - install -Dm644 target/xdgen/app.desktop /app/share/applications/com.xoloitzcuintle95.MediatecaLocal.desktop
+      - install -Dm644 target/xdgen/app.metainfo.xml /app/share/metainfo/com.xoloitzcuintle95.MediatecaLocal.metainfo.xml
+      - install -Dm644 resources/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/com.xoloitzcuintle95.MediatecaLocal.svg
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      # LOCAL ONLY: cargo fetches crates.io and the pinned libcosmic git rev.
+      # Vendoring with `just vendor` currently fails because libcosmic's
+      # subcrates resolve the same commit through a second (branch) source,
+      # which cargo refuses to vendor ("duplicate version ... vendored from
+      # two sources"). This must be solved (flatpak-cargo-generator) before a
+      # Flathub submission; Flathub builds run with --sandbox (no network).
+      build-args:
+        - --share=network
+      env:
+        CARGO_HOME: /run/build/mediateca-local/cargo
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .git
+          - .hermes
+          - target
+          - vendor
+          - vendor.tar
+          - resources/packaging
