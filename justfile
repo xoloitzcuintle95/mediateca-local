@@ -1,7 +1,7 @@
 # Name of the application's binary.
 name := 'mediateca-local'
 # The unique ID of the application.
-appid := 'com.diegomendoza.MediatecaLocal'
+appid := 'com.xoloitzcuintle95.MediatecaLocal'
 
 # Path to root file system, which defaults to `/`.
 rootdir := env('DESTDIR', '')

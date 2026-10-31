@@ -12,3 +12,6 @@ debian/*
 !debian/install
 !debian/rules
 !debian/source
+TRASPASO_OPENCODE.md
+ANALISIS_DETALLADO.md
+.hermes/

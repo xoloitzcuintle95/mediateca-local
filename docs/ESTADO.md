@@ -1,6 +1,6 @@
 # Estado del proyecto — Mediateca Local
 
-Commit de referencia: **`747f331`** (`Endurecer portadas, raíz y rutas no UTF-8`) más el `fadvise` de lectura de etiquetas, todavía sin commit. Las cifras de la colección son mediciones puntuales y el disco cambió durante la sesión.
+Commit de referencia: **`1079035`** (`chore: remove AI session files from tracking`), sin commit nuevo. En esta revisión se corrigió el App ID del `justfile` (ahora `com.xoloitzcuintle95.MediatecaLocal`), se reescribió `README.md` en inglés, se declaró `rust-version = "1.93"` en `Cargo.toml` (verificado: `cargo +1.93 check --locked` pasa con `CARGO_TARGET_DIR` aparte; 1.88 falla porque libcosmic pinneado exige 1.93) y se agregó el panel de detalles con ventana angosta/alta a `PENDIENTES.md`. Clippy y `cargo test` (80 tests) pasan. Las cifras de la colección son mediciones puntuales y el disco cambió durante la sesión.
 
 Límite de este documento: **200 líneas**.
 

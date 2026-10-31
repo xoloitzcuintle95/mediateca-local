@@ -1,54 +1,99 @@
 # Mediateca Local
 
-A media catalog for COSMIC. Point it at a folder, browse your music, videos and books. It never touches your files.
+A local media catalog for the COSMIC desktop. Point it at a folder and browse
+your music, videos and books — it only reads your files, never touches them.
+
+<!-- screenshots: TODO -->
+
+## What it does
+
+It scans one folder, reads tags and embedded covers from your existing files,
+and groups them: music by artist/album, video by series/season/episode, books
+by author. Opening an item hands it to your system's default application.
+
+What it does **not** do:
+
+- It never writes to, moves or renames anything in your collection.
+- It makes no network requests — everything runs locally.
+- The repository link in the About dialog just opens your web browser.
+
+## Supported formats
+
+| Kind  | Formats        | Notes                                        |
+| ----- | -------------- | -------------------------------------------- |
+| Music | mp3, flac, ogg | tags and embedded covers                     |
+| Video | mkv, mp4, avi  | identified by file name (`SxxEyy`); no posters |
+| Books | epub, pdf      | epub metadata and covers; pdf listed plainly |
 
 ## Requirements
 
-- A GNU/Linux system with the [COSMIC](https://github.com/pop-os/cosmic-epoch) desktop libraries (libcosmic)
-- Rust (latest stable, via [rustup](https://rustup.rs/))
-- `just` for the build recipes below
+- GNU/Linux with the [COSMIC](https://github.com/pop-os/cosmic-epoch) libraries
+- Rust >= 1.93 (via [rustup](https://rustup.rs/); the pinned libcosmic revision requires it)
+- [`just`](https://github.com/casey/just)
 
-The app is read-only: it scans your existing files, reads their tags and embedded covers, and opens them with the system's default application. It never moves, renames or modifies anything in your collection, and it makes no network requests.
+No other system packages are required. The build script only reads
+`resources/` and `i18n/` and writes to `target/xdgen/`.
 
-Application ID: `com.xoloitzcuintle95.MediatecaLocal`.
+## Build and run
 
-## Installation
+```sh
+just            # build (release)
+just run        # build and run
+just install    # install to ~/.local (untested with the current app ID)
+```
 
-A [justfile](./justfile) is included by default for the [casey/just][just] command runner.
+## Getting good results
 
-- `just` builds the application with the default `just build-release` recipe
-- `just run` builds and runs the application
-- `just install` installs the project into the system
-- `just vendor` creates a vendored tarball
-- `just build-vendored` compiles with vendored dependencies from that tarball
-- `just check` runs clippy on the project to check for linter warnings
-- `just check-json` can be used by IDEs that support LSP
+Mediateca Local does not fetch metadata from the internet and does not read
+NFO files or movie posters. It relies on the tags and file names your files
+already have. Before importing, it is worth tidying your collection with:
 
-## Translators
+- **Music:** [MusicBrainz Picard](https://picard.musicbrainz.org/) — accurate
+  artist/album/title tags and embedded art
+- **Video:** [tinyMediaManager](https://www.tinyMediaManager.org/) —
+  consistent `Series SxxEyy` file names
+- **Books:** [Calibre](https://calibre-ebook.com/) — proper EPUB metadata
 
-[Fluent][fluent] is used for localization of the software. Fluent's translation files are found in the [i18n directory](./i18n). New translations may copy the [English (en) localization](./i18n/en) of the project, rename `en` to the desired [ISO 639-1 language code][iso-codes], and then translations can be provided for each [message identifier][fluent-guide]. If no translation is necessary, the message may be omitted.
+## Known limitations
+
+- Books are shown as a flat list; no nested shelves.
+- PDFs are catalogued without reading their metadata.
+- Video is matched by file name only (`SxxEyy`); movies get icons, not posters.
+- The first import can take a while on a spinning disk, with no progress display.
+- Search does not normalize accents.
+- The details panel misbehaves when the window is very narrow and tall.
+
+## Tests
+
+```sh
+cargo test
+```
+
+## Built with AI assistance
+
+This project was built with the help of AI coding models, and reviewed through
+tests and daily use. See [AGENTS.md](./AGENTS.md) for the project rules.
+
+## Contributing
+
+Issues are welcome. [AGENTS.md](./AGENTS.md) describes the project's rules for
+anyone (human or AI) working on it.
+
+## Translations
+
+Translations use [Fluent](https://projectfluent.org/) files in
+[i18n/](./i18n) (`en` and `es`).
 
 ## Packaging
 
-If packaging for a Linux distribution, vendor dependencies locally with the `vendor` rule, and build with the vendored sources using the `build-vendored` rule. When installing files, use the `rootdir` and `prefix` variables to change installation paths.
+For distro packaging, vendor dependencies and build from the vendored sources:
 
 ```sh
 just vendor
 just build-vendored
-just rootdir=debian/mediateca-local prefix=/usr install
+just rootdir=/path/to/pkg prefix=/usr install
 ```
 
-It is recommended to build a source tarball with the vendored dependencies, which can typically be done by running `just vendor` on the host system before it enters the build environment.
+## License
 
-## Developers
-
-Developers should install [rustup][rustup] and configure their editor to use [rust-analyzer][rust-analyzer]. To improve compilation times, disable LTO in the release profile, install the [mold][mold] linker, and configure [sccache][sccache] for use with Rust. The [mold][mold] linker will only improve link times if LTO is disabled.
-
-[fluent]: https://projectfluent.org/
-[fluent-guide]: https://projectfluent.org/fluent/guide/hello.html
-[iso-codes]: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-[just]: https://github.com/casey/just
-[rustup]: https://rustup.rs/
-[rust-analyzer]: https://rust-analyzer.github.io/
-[mold]: https://github.com/rui314/mold
-[sccache]: https://github.com/mozilla/sccache
+MIT — see [LICENSE](./LICENSE).

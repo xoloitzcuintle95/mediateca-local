@@ -23,4 +23,5 @@
 - Reducir las features de `tokio` a las que realmente se usan (sin verificar).
 - Pósters de película: leer una imagen con el mismo nombre del video junto al archivo (opcional y local); las series necesitarían carpeta por serie; hoy todo video usa icono (sin verificar).
 - Con 8 hilos, dos hilos pueden decodificar la misma portada a la vez (carrera); falta deduplicar por hash en vuelo (sin verificar).
-- Probar un filtro de reescalado más rápido que Lanczos3 o miniaturas más chicas (por ejemplo, 384 px) para bajar render/JPEG; comparar antes la calidad visual (sin verificar).
+- Filtro de reescalado más rápido que Lanczos3 o miniaturas más chicas (por ejemplo, 384 px) para bajar render/JPEG; comparar antes la calidad visual (sin verificar).
+- Panel de detalles con ventana muy angosta y alta: revisar si se acopla mal o tapa contenido (sin verificar).
