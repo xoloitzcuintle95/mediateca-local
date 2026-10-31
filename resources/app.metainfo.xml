@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.xoloitzcuintle95.MediatecaLocal</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Mediateca Local</name>
+  <summary>Catálogo local de música, video y libros</summary>
+  <description>
+    <p>Mediateca Local cataloga los archivos de música, video y libros que ya están en tu equipo. Lee etiquetas y portadas locales, y abre cada archivo con la aplicación predeterminada del sistema.</p>
+    <p>No modifica la colección y no hace peticiones de red.</p>
+  </description>
+  <icon type="stock">com.xoloitzcuintle95.MediatecaLocal</icon>
+  <url type="homepage">https://github.com/xoloitzcuintle95/mediateca-local</url>
+  <launchable type="desktop-id">com.xoloitzcuintle95.MediatecaLocal.desktop</launchable>
+  <provides>
+    <id>com.system76.CosmicApplication</id>
+    <binary>mediateca-local</binary>
+  </provides>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+  <categories>
+    <category>AudioVideo</category>
+  </categories>
+  <keywords>
+    <keyword>music</keyword>
+    <keyword>video</keyword>
+    <keyword>books</keyword>
+    <keyword>catalog</keyword>
+  </keywords>
+  <content_rating type="oars-1.1" />
+</component>
+

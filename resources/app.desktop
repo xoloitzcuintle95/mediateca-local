@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Mediateca Local
+Comment=A local media catalog for your music, videos and books
+Type=Application
+Icon=com.xoloitzcuintle95.MediatecaLocal
+Exec=mediateca-local %F
+Terminal=false
+StartupNotify=true
+Categories=AudioVideo;
+Keywords=music;video;books;catalog;
