@@ -1,38 +1,57 @@
-# Mediateca Local — catálogo multimedia para COSMIC
+# Mediateca Local — media catalog for COSMIC
 
-App de escritorio para COSMIC (Pop!_OS 24.04) en Rust con libcosmic. Cataloga archivos locales (video, música, libros) y los abre con la app predeterminada del sistema. El usuario es principiante: explica en español sencillo y haz cambios pequeños.
+A desktop app for COSMIC (Pop!_OS 24.04) in Rust with libcosmic. It catalogs
+local files (video, music, books) and opens them with the system's default
+application. The project owner is a beginner: explain changes simply and keep
+them small. Public-facing documents are written in English; internal working
+documents (`docs/ESTADO.md`) stay in Spanish.
 
-## Reglas de trabajo
-- Parte SIEMPRE del código del template. Antes de usar cualquier API de libcosmic, búscala en el código del template, en los ejemplos de libcosmic (descargados en ~/.cargo/git/checkouts/) o con `cargo doc`. No inventes APIs de memoria: libcosmic cambia seguido.
-- Después de cada cambio corre `cargo check`. Al cerrar una tarea, corre `cargo clippy` y las pruebas; `just run` lo ejecuta el usuario, no el agente. Nunca digas "listo" si no compila.
-- Si fallas 3 veces con el mismo error, detente y explícame el problema.
-- No agregues dependencias sin decirme para qué.
-- La app solo LEE las carpetas del catálogo: nunca borra, mueve ni modifica archivos del usuario. Las portadas y miniaturas se guardan solo en el directorio de caché del usuario (XDG_CACHE_HOME), nunca dentro de la colección.
-- La app no hace peticiones de red. Lee etiquetas y portadas únicamente de los archivos locales.
-- Las etiquetas se leen con lofty en modo solo lectura; no se usan sus APIs de escritura.
+## Working rules
+- ALWAYS start from the template's code. Before using any libcosmic API, look
+  it up in the template's code, in the libcosmic examples (downloaded under
+  ~/.cargo/git/checkouts/) or with `cargo doc`. Never invent APIs from memory:
+  libcosmic changes often.
+- After every change run `cargo check`. When a task is done, run `cargo clippy`
+  and the tests; `just run` is executed by the user, not the agent. Never say
+  "done" if it doesn't compile.
+- If you fail 3 times with the same error, stop and explain the problem.
+- Don't add dependencies without saying what they are for.
+- The app only READS the catalog folders: never delete, move or modify the
+  user's files. Covers and thumbnails are stored only in the user's cache
+  directory (XDG_CACHE_HOME), never inside the collection.
+- The app makes no network requests. It reads tags and covers only from local
+  files.
+- Tags are read with lofty in read-only mode; its write APIs are never used.
 
-## Tipos de medio
-- Cada tipo de medio se define en un solo lugar: extensiones, proporción de portada, nombres de sus niveles de jerarquía y forma de abrir el archivo.
+## Media types
+- Each media type is defined in one place: extensions, cover aspect ratio,
+  names of its hierarchy levels, and how to open the file.
 
-## Diseño (debe verse como app oficial de COSMIC)
-- Usa widgets de libcosmic, no widgets crudos de iced cuando exista equivalente.
-- Estructura estándar de COSMIC: barra de encabezado con buscador, barra de navegación lateral (Todo / Música / Video / Libros) y panel de contexto para detalles y ajustes.
-- Colores, espaciados y radios salen del tema (cosmic-theme). Cero colores fijos. Debe verse bien en modo claro y oscuro.
-- Iconos simbólicos del tema del sistema, no emojis.
-- Los ajustes se guardan con cosmic-config.
+## Design (must look like an official COSMIC app)
+- Use libcosmic widgets, not raw iced widgets when an equivalent exists.
+- Standard COSMIC structure: header bar with search, side navigation bar
+  (All / Music / Video / Books) and a context panel for details and settings.
+- Colors, spacing and radii come from the theme (cosmic-theme). Zero hardcoded
+  colors. Must look right in light and dark mode.
+- Symbolic icons from the system theme, not emojis.
+- Settings are stored with cosmic-config.
 
-## Arquitectura
-- ID de la app: `com.xoloitzcuintle95.MediatecaLocal`, definido en `src/model.rs`.
-- Patrón Model-View-Update: Message -> update -> view. Nada de lógica pesada en view.
-- Escaneo y base de datos en tareas asíncronas: la UI nunca se congela.
-- SQLite en el directorio de datos del usuario (XDG), no dentro del proyecto.
-- Abrir archivos con `xdg-open`, como proceso separado de la app.
-- Módulos: model, db, scanner, opener, ui/.
+## Architecture
+- App ID: `com.xoloitzcuintle95.MediatecaLocal`, defined in `src/model.rs`.
+- Model-View-Update pattern: Message -> update -> view. No heavy logic in view.
+- Scanning and the database run in async tasks: the UI never freezes.
+- SQLite in the user's XDG data directory, not inside the project.
+- Open files with `xdg-open`, as a separate process from the app.
+- Modules: model, db, scanner, opener, ui/.
 
-## Rendimiento
-- Re-escanear solo relee etiquetas y portadas de archivos nuevos o cuyo tamaño o mtime cambiaron. Para los demás se reutiliza la metadata y el hash de portada guardados en SQLite.
-- El escaneo, la lectura de etiquetas y la generación de miniaturas corren fuera del hilo de la UI.
-- Una portada se procesa una sola vez por contenido; las siguientes peticiones reutilizan la miniatura del caché.
+## Performance
+- Re-scanning only re-reads tags and covers from new files, or files whose
+  size or mtime changed. Everything else reuses the metadata and cover hash
+  already stored in SQLite.
+- Scanning, tag reading and thumbnail generation run off the UI thread.
+- A cover is processed once per content; later requests reuse the cached
+  thumbnail.
 
-## Comandos
-- `cargo check`, `cargo clippy`, `just build-release`; `just run` lo ejecuta el usuario.
+## Commands
+- `cargo check`, `cargo clippy`, `just build-release`; `just run` is executed
+  by the user.

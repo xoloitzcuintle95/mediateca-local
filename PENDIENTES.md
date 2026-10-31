@@ -1,27 +1,36 @@
-# Pendientes
+# To-do
 
-## Verificación pendiente
-- Comprobar visualmente la cuadrícula responsive en ventanas muy anchas y muy angostas. Si el reparto de columnas no funciona bien en algún caso, usar el respaldo `FlexRow` con `SpaceBetween` y anotarlo aquí.
-- Revisar el recorte de barras con portadas nuevas que tengan fondos uniformes claros.
-- Confirmar en pantalla que las dos variantes de `S29E03` se ven bajo el mismo episodio con su etiqueta.
+## Pending verification
+- Visually check the responsive grid in very wide and very narrow windows. If
+  the column split doesn't work in some case, fall back to `FlexRow` with
+  `SpaceBetween` and note it here.
+- Check bar cropping with new covers that have light uniform backgrounds.
+- Confirm on screen that both `S29E03` variants show under the same episode
+  with their label.
 
-## Optimización
-- Investigar por qué los 4 hilos solo mejoraron el primer escaneo un 32 %.
+## Optimization
+- Investigate why the 4 threads only improved the first scan by 32%.
 
-## Después
-- Botón para borrar todo el catálogo (base y caché) con aviso, para probar el primer escaneo; la carpeta de la colección nunca se toca.
-- Primera importación (~26 s con la base vacía, 292 pistas y 208 portadas): mostrar progreso y llenar la lista mientras avanza, en vez de esperar al final.
-- Visores/reproductores propios: no se implementarán; la apertura será externa.
-- Revisar miniaturas antiguas v1 (16:9) que quedan en caché sin uso.
+## Later
+- Button to wipe the whole catalog (database and cache) with a confirmation,
+  to test the first scan; the collection folder is never touched.
+- First import (~26 s with an empty database, 292 tracks and 208 covers):
+  show progress and fill the list as it goes, instead of waiting until the end.
+- Built-in viewers/players: will not be implemented; opening stays external.
+- Review old v1 thumbnails (16:9) left unused in the cache.
 
-## Sin verificar
-- Leer `cover.jpg` y hashearlo una sola vez por directorio, no una vez por pista (sin verificar).
-- Detectar el cambio de `cover.jpg` aunque el archivo de audio no cambie de tamaño ni de fecha (sin verificar).
-- Usar el artista del álbum (TPE2) para agrupar, en vez del primer artista de la pista (sin verificar).
-- Reintentar la lectura de etiquetas cuando quedó en error, sin esperar a que cambie el archivo (sin verificar).
-- Declarar `rust-version` en `Cargo.toml` y documentar el requisito de Rust en el README (sin verificar).
-- Reducir las features de `tokio` a las que realmente se usan (sin verificar).
-- Pósters de película: leer una imagen con el mismo nombre del video junto al archivo (opcional y local); las series necesitarían carpeta por serie; hoy todo video usa icono (sin verificar).
-- Con 8 hilos, dos hilos pueden decodificar la misma portada a la vez (carrera); falta deduplicar por hash en vuelo (sin verificar).
-- Filtro de reescalado más rápido que Lanczos3 o miniaturas más chicas (por ejemplo, 384 px) para bajar render/JPEG; comparar antes la calidad visual (sin verificar).
-- Panel de detalles con ventana muy angosta y alta: revisar si se acopla mal o tapa contenido (sin verificar).
+## Unverified
+- Read `cover.jpg` and hash it once per directory, not once per track (unverified).
+- Detect `cover.jpg` changes even when the audio file's size and date don't change (unverified).
+- Group by the album artist (TPE2) instead of the track's first artist (unverified).
+- Retry tag reads that ended in error, without waiting for the file to change (unverified).
+- Reduce `tokio` features to the ones actually used (unverified).
+- Movie posters: read an image with the same name as the video next to it
+  (optional and local); series would need a per-series folder; today every
+  video uses an icon (unverified).
+- With 8 threads, two threads may decode the same cover at once (race);
+  in-flight dedup by hash is missing (unverified).
+- Try a rescaling filter faster than Lanczos3, or smaller thumbnails (e.g.
+  384 px), to cut render/JPEG cost; compare visual quality first (unverified).
+- Details panel with a very narrow and tall window: check whether it docks
+  wrong or covers content (unverified).

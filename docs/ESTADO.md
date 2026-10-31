@@ -1,8 +1,11 @@
 # Estado del proyecto — Mediateca Local
 
-Commit de referencia: **`1079035`** (`chore: remove AI session files from tracking`), sin commit nuevo. En esta revisión se corrigió el App ID del `justfile` (ahora `com.xoloitzcuintle95.MediatecaLocal`), se reescribió `README.md` en inglés, se declaró `rust-version = "1.93"` en `Cargo.toml` (verificado: `cargo +1.93 check --locked` pasa con `CARGO_TARGET_DIR` aparte; 1.88 falla porque libcosmic pinneado exige 1.93) y se agregó el panel de detalles con ventana angosta/alta a `PENDIENTES.md`. Clippy y `cargo test` (80 tests) pasan. Las cifras de la colección son mediciones puntuales y el disco cambió durante la sesión.
+Commit de referencia: **`2ae8fba`** (`chore: pin libcosmic, update README, justfile and docs`), sin commit nuevo. En esta revisión se tradujeron al inglés los documentos públicos (`AGENTS.md`, `PENDIENTES.md`), se añadió la nota de idioma a este documento y la línea correspondiente al README; convención escrita en AGENTS.md: docs públicos en inglés, internos en español. Se decidió no crear wiki: el contenido vive en README/PENDIENTES/ESTADO dentro del repo. Se retiró de `PENDIENTES.md` el punto de `rust-version`/README, ya cumplido. Clippy y `cargo test` (80 tests) pasan.
 
 Límite de este documento: **200 líneas**.
+
+> Language note: this is an internal working document, kept in Spanish on
+> purpose. Public-facing documents (README, AGENTS.md) are in English.
 
 ## 1. Qué es y cómo correrla
 

@@ -15,7 +15,7 @@ What it does **not** do:
 
 - It never writes to, moves or renames anything in your collection.
 - It makes no network requests — everything runs locally.
-- The repository link in the About dialog just opens your web browser.
+- The About dialog is plain: no update checks, no telemetry — its only link opens your web browser.
 
 ## Supported formats
 
@@ -77,7 +77,8 @@ tests and daily use. See [AGENTS.md](./AGENTS.md) for the project rules.
 ## Contributing
 
 Issues are welcome. [AGENTS.md](./AGENTS.md) describes the project's rules for
-anyone (human or AI) working on it.
+anyone (human or AI) working on it. Internal working documents
+(`docs/ESTADO.md`) are kept in Spanish.
 
 ## Translations
 
