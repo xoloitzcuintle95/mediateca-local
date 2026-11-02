@@ -641,7 +641,9 @@ fn write_scan(
     }
 
     let deleted = if allow_delete {
-        delete_missing(&transaction, root, items)?
+        let inside = delete_missing(&transaction, root, items)?;
+        let outside = delete_missing_outside_root(&transaction, root)?;
+        inside + outside
     } else {
         0
     };
@@ -688,6 +690,42 @@ fn delete_missing(
             params![prefix],
         )
         .map_err(|error| format!("No se pudieron borrar archivos obsoletos: {error}"))
+}
+
+/// Borra filas FUERA de `root` cuyo archivo ya no existe en el disco.
+///
+/// Esto limpia restos de raíces abandonadas (p. ej. rutas del portal de
+/// Flatpak de un escaneo anterior) sin tocar archivos que siguen existiendo:
+/// un usuario que cambia de raíz y regresa no pierde su catálogo.
+fn delete_missing_outside_root(
+    transaction: &Transaction<'_>,
+    root: &Path,
+) -> Result<usize, String> {
+    let prefix = root.join("").to_string_lossy().into_owned();
+
+    let rows: Vec<String> = {
+        let mut statement = transaction
+            .prepare("SELECT path FROM files WHERE substr(path, 1, length(?1)) <> ?1")
+            .map_err(|error| format!("No se pudo leer el catálogo: {error}"))?;
+
+        statement
+            .query_map([prefix], |row| row.get::<_, String>(0))
+            .map_err(|error| format!("No se pudo leer el catálogo: {error}"))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| format!("No se pudo leer el catálogo: {error}"))?
+    };
+
+    let mut deleted = 0;
+    for path in rows {
+        if !Path::new(&path).exists() {
+            transaction
+                .execute("DELETE FROM files WHERE path = ?1", [&path])
+                .map_err(|error| format!("No se pudo borrar {}: {error}", path))?;
+            deleted += 1;
+        }
+    }
+
+    Ok(deleted)
 }
 
 fn load_all(connection: &Connection) -> Result<Vec<MediaItem>, String> {
