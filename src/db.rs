@@ -23,6 +23,7 @@ use crate::model::{
 };
 use crate::scanner;
 use crate::tags;
+use crate::video_tags;
 
 pub use crate::model::APP_ID;
 
@@ -439,7 +440,12 @@ fn enrich_items(
             scope.spawn(|| {
                 for item in chunk
                     .iter_mut()
-                    .filter(|item| matches!(item.kind, Kind::Music | Kind::Book))
+                    .filter(|item| {
+                        matches!(
+                            item.kind,
+                            Kind::Music | Kind::Book | Kind::Video
+                        )
+                    })
                 {
                     if let Some(previous) = cached.get(&item.path)
                         && can_reuse_metadata(previous, item)
@@ -475,7 +481,8 @@ fn enrich_item(item: &mut MediaItem, cache: &Path) -> bool {
             .and_then(|extension| extension.to_str())
             .is_some_and(|extension| extension.eq_ignore_ascii_case("epub"));
 
-    if item.kind == Kind::Video || (item.kind == Kind::Book && !is_epub) {
+    // Los PDF no se procesan: se quedan con su nombre.
+    if item.kind == Kind::Book && !is_epub {
         return false;
     }
 
@@ -518,7 +525,19 @@ fn enrich_item_inner(item: &mut MediaItem, cache: &Path) {
                 ..TrackMetadata::default()
             };
         }
-        Kind::Video => {}
+        Kind::Video => {
+            let tags = video_tags::read(path);
+            // Sin portadas para video: `cover_hash` queda en None.
+            item.cover_ready = false;
+            item.metadata = TrackMetadata {
+                title: tags.title,
+                creator: tags.creator,
+                collection: tags.collection,
+                year: tags.year,
+                status: tags.status,
+                ..TrackMetadata::default()
+            };
+        }
     }
 }
 
@@ -1425,6 +1444,33 @@ mod tests {
         let _ = sync(&root, &database, &base).unwrap();
 
         assert_eq!(fs::read(&path).unwrap(), before);
+
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn enriquece_videos_con_respaldo_y_marca_estado() {
+        let base = temp_dir("video-tags");
+        let root = base.join("catalogo");
+        let database = base.join("catalogo.db");
+
+        // Sin lector de tags para .avi: respaldo por nombre de archivo.
+        write_file(&root.join("Pelicula.1998.avi"));
+
+        let outcome = sync(&root, &database, &base).unwrap();
+        let video = outcome
+            .items
+            .iter()
+            .find(|item| item.name == "Pelicula.1998.avi")
+            .unwrap();
+
+        assert_eq!(video.metadata.year, Some(1998));
+        assert_eq!(video.metadata.status, TagStatus::Missing);
+
+        // Reescaneo: con estado real, la metadata se reutiliza.
+        let second = sync(&root, &database, &base).unwrap();
+        assert_eq!(second.tag_reused, 1);
+        assert_eq!(second.tag_reads, 0);
 
         let _ = fs::remove_dir_all(base);
     }
