@@ -1192,6 +1192,7 @@ mod tests {
         let mut app = app_con_detalles_abiertos();
         let config = Config {
             catalog_root: String::from("/tmp/catalogo"),
+            view_mode: String::from("grid"),
         };
 
         let _ = app.apply_catalog_root(config.clone());
