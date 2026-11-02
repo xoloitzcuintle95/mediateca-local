@@ -1,26 +1,48 @@
-# Mediateca Local — media catalog for COSMIC
+# AGENTS.md — Perfil rust-cosmic (Mediateca Local)
 
-A desktop app for COSMIC (Pop!_OS 24.04) in Rust with libcosmic. It catalogs
-local files (video, music, books) and opens them with the system's default
-application. The project owner is a beginner: explain changes simply and keep
-them small. All in-repo documents are written in English.
+## Propósito
+Desarrollo de Mediateca Local: app de escritorio COSMIC (Pop!_OS 24.04) en
+Rust con libcosmic que cataloga archivos locales (video, música, libros) y
+los abre con la aplicación predeterminada del sistema. Código de producción
+y tests. Toda la documentación del repo va en inglés.
 
-## Working rules
-- ALWAYS start from the template's code. Before using any libcosmic API, look
-  it up in the template's code, in the libcosmic examples (downloaded under
-  ~/.cargo/git/checkouts/) or with `cargo doc`. Never invent APIs from memory:
-  libcosmic changes often.
-- After every change run `cargo check`. When a task is done, run `cargo clippy`
-  and the tests; `just run` is executed by the user, not the agent. Never say
-  "done" if it doesn't compile.
+## Stack y Comandos
+- Rust + libcosmic (pinned), SQLite, Flatpak.
+- After every change run `cargo check`. When a task is done, run
+  `cargo clippy` and the tests. `just run` is executed by the user, not the
+  agent. Never say "done" if it doesn't compile. `just build-release` also
+  exists; Flatpak packaging only with explicit approval.
+- Before using any libcosmic API, look it up in the template's code, in the
+  libcosmic examples (downloaded under ~/.cargo/git/checkouts/) or with
+  `cargo doc`. Never invent APIs from memory: libcosmic changes often.
+
+## Reglas de Oro
+- ALWAYS start from the template's code.
 - If you fail 3 times with the same error, stop and explain the problem.
 - Don't add dependencies without saying what they are for.
 - The app only READS the catalog folders: never delete, move or modify the
   user's files. Covers and thumbnails are stored only in the user's cache
   directory (XDG_CACHE_HOME), never inside the collection.
-- The app makes no network requests. It reads tags and covers only from local
-  files.
+- The app makes no network requests. It reads tags and covers only from
+  local files.
 - Tags are read with lofty in read-only mode; its write APIs are never used.
+- Git: author `xoloitzcuintle95` + noreply, never real identity.
+
+## Flujo de Trabajo
+1. Planear: describe the change and the intended diff before touching code.
+2. Pedir permiso: wait for the user's OK.
+3. Ejecutar: minimal change → `cargo check` green.
+4. Reportar: what changed, what was verified (check/clippy/test), what is
+   left.
+
+## Límites de dominio
+- La bóveda personal es del perfil OG. El juego (Godot) es del perfil
+  gamedev. El copy y Build in Public son del perfil marketing. Este perfil
+  no escribe copy ni notas personales.
+
+---
+
+# Mediateca Local — media catalog for COSMIC (project rules)
 
 ## Media types
 - Each media type is defined in one place: extensions, cover aspect ratio,
@@ -50,7 +72,3 @@ them small. All in-repo documents are written in English.
 - Scanning, tag reading and thumbnail generation run off the UI thread.
 - A cover is processed once per content; later requests reuse the cached
   thumbnail.
-
-## Commands
-- `cargo check`, `cargo clippy`, `just build-release`; `just run` is executed
-  by the user.
