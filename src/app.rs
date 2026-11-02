@@ -10,7 +10,9 @@ use crate::covers;
 use crate::db::{self, CachedCatalog};
 use crate::fl;
 use crate::library::{AlbumKey, AliasMap, Library};
-use crate::model::{Kind, MediaItem, OpenAction, ScanOutcome, ScanWarning};
+use crate::model::{
+    Kind, MediaItem, OpenAction, ScanOutcome, ScanWarning, ViewMode,
+};
 use crate::opener;
 use crate::ui::{self, CatalogView};
 use crate::video::VideoLibrary;
@@ -57,6 +59,8 @@ pub struct AppModel {
     warning: Option<ScanWarning>,
     /// Current header search text.
     search: String,
+    /// Modo de visualización de la biblioteca.
+    view_mode: ViewMode,
     /// Route inside the music library.
     music_route: MusicRoute,
     /// Album opened from the "Todo" overview.
@@ -102,6 +106,8 @@ pub enum Message {
     GoToSeasons(String),
     ChooseCatalogFolder,
     CatalogFolderChosen(Result<Option<PathBuf>, String>),
+    /// Se cambió el modo de visualización de la biblioteca.
+    ViewModeChanged(ViewMode),
     /// Primer clic en un elemento; espera a ver si llega un doble clic.
     ItemClicked(Details),
     /// Confirma el clic simple si no llegó un segundo clic a tiempo.
@@ -206,19 +212,22 @@ impl cosmic::Application for AppModel {
         };
 
         // Construct the app model with the runtime's core.
+        let config = cosmic_config::Config::new(Self::APP_ID, Config::VERSION)
+            .map(|context| match Config::get_entry(&context) {
+                Ok(config) => config,
+                Err((_errors, config)) => config,
+            })
+            .unwrap_or_default();
+        let view_mode =
+            ViewMode::from_config(&config.view_mode).unwrap_or_default();
+
         let mut app = AppModel {
             core,
             context_page: ContextPage::default(),
             about,
             nav,
             key_binds: HashMap::new(),
-            // Optional configuration file for an application.
-            config: cosmic_config::Config::new(Self::APP_ID, Config::VERSION)
-                .map(|context| match Config::get_entry(&context) {
-                    Ok(config) => config,
-                    Err((_errors, config)) => config,
-                })
-                .unwrap_or_default(),
+            config,
             items: Vec::new(),
             library: Library::default(),
             aliases: AliasMap::new(),
@@ -228,6 +237,7 @@ impl cosmic::Application for AppModel {
             deleted: 0,
             warning: None,
             search: String::new(),
+            view_mode,
             music_route: MusicRoute::default(),
             overview_album: None,
             details: None,
@@ -436,6 +446,16 @@ impl cosmic::Application for AppModel {
 
             Message::SearchChanged(search) => {
                 self.search = search;
+                Task::none()
+            }
+
+            Message::ViewModeChanged(mode) => {
+                if self.view_mode == mode {
+                    return Task::none();
+                }
+                self.view_mode = mode;
+                self.config.view_mode = mode.as_str().to_owned();
+                self.save_config();
                 Task::none()
             }
 
@@ -681,6 +701,25 @@ impl cosmic::Application for AppModel {
 }
 
 impl AppModel {
+    /// Guarda la configuración vigente en disco, registrando si falla.
+    ///
+    /// Diferente de `set_catalog_root`: el cambio de raíz muestra una
+    /// advertencia en la interfaz; este guardado silencioso es para
+    /// preferencias donde fallar no bloquea nada.
+    fn save_config(&mut self) {
+        let context = match cosmic_config::Config::new(db::APP_ID, Config::VERSION) {
+            Ok(context) => context,
+            Err(error) => {
+                eprintln!("no se pudo abrir la configuración: {error}");
+                return;
+            }
+        };
+
+        if let Err(error) = self.config.write_entry(&context) {
+            eprintln!("no se pudo guardar la configuración: {error}");
+        }
+    }
+
     /// Updates the header and window titles.
     pub fn update_title(&mut self) -> Task<cosmic::Action<Message>> {
         let mut window_title = fl!("app-title");
