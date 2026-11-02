@@ -194,6 +194,45 @@ struct SeasonBuilder {
     episodes: BTreeMap<u32, EpisodeBuilder>,
 }
 
+/// Datos derivados del nombre de archivo, para respaldos de facetas y de
+/// `video_tags` cuando el contenedor no trae etiquetas.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NameFallback {
+    pub series: Option<String>,
+    pub year: Option<u16>,
+}
+
+/// Serie y año derivados del nombre de archivo. Es el mismo parseo que usa
+/// `VideoLibrary::build`; este respaldo nunca toca el contenido del archivo.
+#[must_use]
+pub fn parse_video_name(name: &str) -> NameFallback {
+    NameFallback {
+        series: parse_name(name).map(|parsed| parsed.series),
+        year: year_in_name(name),
+    }
+}
+
+/// Primer corrida de 4 dígitos entre 1900 y 2100 en el nombre.
+fn year_in_name(name: &str) -> Option<u16> {
+    let bytes = name.as_bytes();
+
+    for window in bytes.windows(4) {
+        if !window.iter().all(u8::is_ascii_digit) {
+            continue;
+        }
+
+        let Ok(year) = std::str::from_utf8(window).unwrap().parse::<u16>() else {
+            continue;
+        };
+
+        if (1900..=2100).contains(&year) {
+            return Some(year);
+        }
+    }
+
+    None
+}
+
 #[derive(Debug)]
 struct EpisodeBuilder {
     title: Option<String>,
@@ -422,5 +461,24 @@ mod tests {
             clean_episode_title(".you.like.that.on.your.face.1080p.hdtv.x264"),
             Some(String::from("you like that on your face"))
         );
+    }
+
+    #[test]
+    fn extrae_el_anio_del_nombre() {
+        assert_eq!(year_in_name("Movie.2009.1080p.mkv"), Some(2009));
+        assert_eq!(year_in_name("South.Park.S29E03.mkv"), None);
+        assert_eq!(year_in_name("pelicula-de-1975.avi"), Some(1975));
+        assert_eq!(year_in_name("sin-numeros.mkv"), None);
+    }
+
+    #[test]
+    fn el_respaldo_del_nombre_da_serie_y_anio() {
+        let parsed = parse_video_name("South.Park.S29E03.2024.1080p.mkv");
+        assert_eq!(parsed.series.as_deref(), Some("South Park"));
+        assert_eq!(parsed.year, Some(2024));
+
+        let parsed = parse_video_name("Una.Pelicula.1998.avi");
+        assert_eq!(parsed.series, None);
+        assert_eq!(parsed.year, Some(1998));
     }
 }
