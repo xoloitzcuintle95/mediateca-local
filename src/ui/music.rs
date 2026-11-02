@@ -12,12 +12,13 @@ use crate::app::{Details, Message};
 use crate::covers;
 use crate::fl;
 use crate::library::{AlbumEntry, ArtistEntry, TrackEntry};
-use crate::model::Kind;
+use crate::model::{Kind, ViewMode};
 
 use super::CatalogView;
-use super::cards::{album_grid, artist_grid, cover_thumbnail};
+use super::cards::{album_grid, album_list, artist_grid, artist_list, cover_thumbnail};
 use super::common::{
     album_matches, album_title, artist_matches, empty, level_label, page_header, scrollable,
+    view_mode_toggle,
     track_matches, year_label,
 };
 use super::status::push_status;
@@ -38,13 +39,17 @@ pub(super) fn artists<'a>(
         fl!("nav-music"),
         fl!("artists-count", count = artists.len()),
         spacing,
+        Some(view_mode_toggle(state.view_mode)),
     );
     content = push_status(content, &state);
 
     content = if artists.is_empty() {
         content.push(empty(fl!("empty-music")))
     } else {
-        content.push(scrollable(artist_grid(artists, state.cache_dir, spacing)))
+        content.push(scrollable(match state.view_mode {
+            ViewMode::Grid => artist_grid(artists, state.cache_dir, spacing),
+            ViewMode::List => artist_list(artists, state.cache_dir, spacing),
+        }))
     };
 
     content.height(Length::Fill).into()
@@ -105,7 +110,10 @@ pub(super) fn artist_albums<'a>(
     content = if albums.is_empty() {
         content.push(empty(fl!("empty-music")))
     } else {
-        content.push(scrollable(album_grid(albums, state.cache_dir, spacing)))
+        content.push(scrollable(match state.view_mode {
+            ViewMode::Grid => album_grid(albums, state.cache_dir, spacing),
+            ViewMode::List => album_list(albums, state.cache_dir, spacing),
+        }))
     };
 
     content.height(Length::Fill).into()
@@ -119,7 +127,7 @@ pub(super) fn album_detail<'a>(
     spacing: Spacing,
 ) -> Element<'a, Message> {
     let Some(album) = state.library.albums.iter().find(|album| &album.key == key) else {
-        let mut content = page_header(fl!("nav-all"), String::new(), spacing);
+        let mut content = page_header(fl!("nav-all"), String::new(), spacing, None);
         content = content.push(empty(fl!("empty-tracks")));
         return content.height(Length::Fill).into();
     };

@@ -6,7 +6,7 @@ use cosmic::Element;
 use cosmic::cosmic_theme::Spacing;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{Alignment, Length};
-use cosmic::widget;
+use cosmic::widget::{self, icon};
 
 use crate::app::Message;
 use crate::fl;
@@ -21,19 +21,66 @@ pub(super) fn page_header<'a>(
     title: String,
     count: String,
     spacing: Spacing,
+    toggle: Option<Element<'a, Message>>,
 ) -> widget::Column<'a, Message, cosmic::Theme, cosmic::Renderer> {
+    let mut title_row = widget::row::with_capacity(3)
+        .push(widget::text::title1(title))
+        .push(widget::space::horizontal())
+        .spacing(spacing.space_s)
+        .align_y(Alignment::End)
+        .width(Length::Fill);
+
+    if let Some(toggle) = toggle {
+        title_row = title_row.push(toggle);
+    }
+
+    title_row = title_row.push(widget::text::body(count));
+
     widget::column::with_capacity(2)
         .spacing(spacing.space_s)
         .width(Length::Fill)
+        .push(title_row)
+}
+
+/// Alternador de modo de vista: cuadrícula o lista. Tema-nativo; el activo
+/// usa el acento del tema.
+pub(super) fn view_mode_toggle<'a>(
+    mode: crate::model::ViewMode,
+) -> Element<'a, Message> {
+    let grid_active = mode == crate::model::ViewMode::Grid;
+    let list_active = mode == crate::model::ViewMode::List;
+
+    widget::row::with_capacity(2)
+        .spacing(spacing_from_static())
         .push(
-            widget::row::with_capacity(3)
-                .push(widget::text::title1(title))
-                .push(widget::space::horizontal())
-                .push(widget::text::body(count))
-                .spacing(spacing.space_s)
-                .align_y(Alignment::End)
-                .width(Length::Fill),
+            widget::button::icon(
+                icon::from_name("view-grid-symbolic").size(16),
+            )
+            .class(if grid_active {
+                cosmic::theme::Button::Suggested
+            } else {
+                cosmic::theme::Button::Transparent
+            })
+            .on_press(Message::ViewModeChanged(crate::model::ViewMode::Grid)),
         )
+        .push(
+            widget::button::icon(
+                icon::from_name("view-list-symbolic").size(16),
+            )
+            .class(if list_active {
+                cosmic::theme::Button::Suggested
+            } else {
+                cosmic::theme::Button::Transparent
+            })
+            .on_press(Message::ViewModeChanged(crate::model::ViewMode::List)),
+        )
+        .into()
+}
+
+fn spacing_from_static() -> f32 {
+    // El alternador se dibuja fuera del contexto de página; usa el espaciado
+    // estándar del tema, que no cambia por página.
+    f32::from(cosmic::theme::spacing().space_s)
 }
 pub(super) fn scrollable<'a>(content: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
     widget::scrollable(content)

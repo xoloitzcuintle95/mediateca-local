@@ -346,6 +346,7 @@ impl cosmic::Application for AppModel {
             video_route: &self.video_route,
             items: &self.items,
             search: &self.search,
+            view_mode: self.view_mode,
             scan_state: &self.scan_state,
             deleted: self.deleted,
             warning: self.warning.as_ref(),
@@ -1179,6 +1180,7 @@ mod tests {
             deleted: 0,
             warning: None,
             search: String::new(),
+            view_mode: ViewMode::default(),
             music_route: MusicRoute::Albums {
                 artist: String::from("Doechii"),
             },

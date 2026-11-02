@@ -8,11 +8,11 @@ use cosmic::iced::Length;
 
 use crate::app::Message;
 use crate::fl;
-use crate::model::{Kind, MediaItem};
+use crate::model::{Kind, MediaItem, ViewMode};
 
 use super::CatalogView;
-use super::cards::book_grid;
-use super::common::{empty, page_header, scrollable};
+use super::cards::{book_grid, book_list};
+use super::common::{empty, page_header, scrollable, view_mode_toggle};
 use super::status::push_status;
 
 pub(super) fn books_view<'a>(
@@ -30,13 +30,17 @@ pub(super) fn books_view<'a>(
         fl!("nav-books"),
         fl!("books-count", count = books.len()),
         spacing,
+        Some(view_mode_toggle(state.view_mode)),
     );
     content = push_status(content, &state);
 
     content = if books.is_empty() {
         content.push(empty(fl!("empty-generic")))
     } else {
-        content.push(scrollable(book_grid(books, state.cache_dir, spacing)))
+        content.push(scrollable(match state.view_mode {
+            ViewMode::Grid => book_grid(books, state.cache_dir, spacing),
+            ViewMode::List => book_list(books, state.cache_dir, spacing),
+        }))
     };
 
     content.height(Length::Fill).into()

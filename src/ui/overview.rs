@@ -10,11 +10,11 @@ use cosmic::widget;
 use crate::app::Message;
 use crate::fl;
 use crate::library::AlbumEntry;
-use crate::model::Kind;
+use crate::model::{Kind, ViewMode};
 
 use super::CatalogView;
-use super::cards::album_grid;
-use super::common::{album_matches, count_kind, empty, page_header, scrollable};
+use super::cards::{album_grid, album_list};
+use super::common::{album_matches, count_kind, empty, page_header, scrollable, view_mode_toggle};
 use super::status::push_status;
 
 pub(super) fn overview<'a>(
@@ -44,6 +44,7 @@ pub(super) fn overview<'a>(
         fl!("nav-all"),
         fl!("albums-count", count = albums.len()),
         spacing,
+        Some(view_mode_toggle(state.view_mode)),
     );
     content = push_status(content, &state);
     content = content.push(widget::text::body(summary));
@@ -51,7 +52,10 @@ pub(super) fn overview<'a>(
     content = if albums.is_empty() {
         content.push(empty(fl!("empty-music")))
     } else {
-        content.push(scrollable(album_grid(albums, state.cache_dir, spacing)))
+        content.push(scrollable(match state.view_mode {
+            ViewMode::Grid => album_grid(albums, state.cache_dir, spacing),
+            ViewMode::List => album_list(albums, state.cache_dir, spacing),
+        }))
     };
 
     content.height(Length::Fill).into()

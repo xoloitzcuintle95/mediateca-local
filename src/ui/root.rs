@@ -26,6 +26,8 @@ pub struct CatalogView<'a> {
     pub video_route: &'a VideoRoute,
     pub items: &'a [MediaItem],
     pub search: &'a str,
+    /// Modo de visualización de las vistas con cuadrícula.
+    pub view_mode: crate::model::ViewMode,
     pub scan_state: &'a ScanState,
     pub deleted: usize,
     pub warning: Option<&'a ScanWarning>,

@@ -63,6 +63,7 @@ fn video_series_root<'a>(
             movies = movies.len()
         ),
         spacing,
+        None,
     );
     content = push_status(content, &state);
 
@@ -96,7 +97,7 @@ fn video_seasons<'a>(
     spacing: Spacing,
 ) -> Element<'a, Message> {
     let Some(series) = state.video_library.series(series_name) else {
-        return page_header(fl!("nav-video"), String::new(), spacing)
+        return page_header(fl!("nav-video"), String::new(), spacing, None)
             .push(empty(fl!("empty-generic")))
             .height(Length::Fill)
             .into();
@@ -157,7 +158,7 @@ fn video_episodes<'a>(
     spacing: Spacing,
 ) -> Element<'a, Message> {
     let Some(series) = state.video_library.series(series_name) else {
-        return page_header(fl!("nav-video"), String::new(), spacing)
+        return page_header(fl!("nav-video"), String::new(), spacing, None)
             .push(empty(fl!("empty-generic")))
             .height(Length::Fill)
             .into();
@@ -167,7 +168,7 @@ fn video_episodes<'a>(
         .iter()
         .find(|season| season.number == season_number)
     else {
-        return page_header(fl!("nav-video"), String::new(), spacing)
+        return page_header(fl!("nav-video"), String::new(), spacing, None)
             .push(empty(fl!("empty-generic")))
             .height(Length::Fill)
             .into();
