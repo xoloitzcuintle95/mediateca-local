@@ -14,6 +14,7 @@ mod scanner;
 mod tags;
 mod ui;
 mod video;
+mod video_tags;
 
 fn main() -> cosmic::iced::Result {
     // Get the system's preferred languages.
