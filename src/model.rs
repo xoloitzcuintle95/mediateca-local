@@ -192,6 +192,37 @@ pub enum ScanWarning {
     OpenFailed { reason: String },
 }
 
+/// Modo de visualización de la biblioteca. Es solo presentación.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum ViewMode {
+    /// Tarjetas en cuadrícula.
+    #[default]
+    Grid,
+    /// Filas compactas.
+    List,
+}
+
+impl ViewMode {
+    /// Valor que se guarda en la configuración.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Grid => "grid",
+            Self::List => "list",
+        }
+    }
+
+    /// Convierte el valor guardado en la configuración; inválido → None.
+    #[must_use]
+    pub fn from_config(value: &str) -> Option<Self> {
+        match value {
+            "grid" => Some(Self::Grid),
+            "list" => Some(Self::List),
+            _ => None,
+        }
+    }
+}
+
 /// Resultado de sincronizar el disco con la base de datos.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ScanOutcome {
@@ -209,4 +240,18 @@ pub struct ScanOutcome {
     pub tag_reused: usize,
     pub deleted: usize,
     pub warning: Option<ScanWarning>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ViewMode;
+
+    #[test]
+    fn view_mode_persiste_y_recupera() {
+        assert_eq!(ViewMode::default().as_str(), "grid");
+        assert_eq!(ViewMode::from_config("grid"), Some(ViewMode::Grid));
+        assert_eq!(ViewMode::from_config("list"), Some(ViewMode::List));
+        assert_eq!(ViewMode::from_config("otra-cosa"), None);
+        assert_eq!(ViewMode::from_config(""), None);
+    }
 }
