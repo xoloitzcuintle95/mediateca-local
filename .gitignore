@@ -17,3 +17,6 @@ ANALISIS_DETALLADO.md
 .hermes/
 .flatpak-builder/
 build-dir/
+
+# backups locales
+*.backup
