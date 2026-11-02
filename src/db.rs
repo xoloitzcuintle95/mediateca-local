@@ -965,6 +965,38 @@ mod tests {
     }
 
     #[test]
+    fn borra_fuera_de_la_raiz_solo_si_el_archivo_ya_no_existe() {
+        let base = temp_dir("fuera-huerfano");
+        let root = base.join("catalogo");
+        let database = base.join("catalogo.db");
+        let vieja_raiz = base.join("vieja");
+
+        // Escaneo viejo: dos archivos bajo otra raíz.
+        write_file(&vieja_raiz.join("sigue-existiendo.mp3"));
+        write_file(&vieja_raiz.join("ya-no-existe.mp3"));
+        let primera = sync(&vieja_raiz, &database, &base).unwrap();
+        assert_eq!(primera.summary.total(), 2);
+
+        // Se elimina un archivo y se cambia de raíz.
+        fs::remove_file(vieja_raiz.join("ya-no-existe.mp3")).unwrap();
+        write_file(&root.join("nuevo.mp3"));
+        let segunda = sync(&root, &database, &base).unwrap();
+
+        assert_eq!(segunda.deleted, 1);
+        let connection = Connection::open(&database).unwrap();
+        let paths: Vec<String> = super::load_all(&connection)
+            .unwrap()
+            .into_iter()
+            .map(|item| item.path)
+            .collect();
+        assert!(paths.iter().any(|p| p.ends_with("nuevo.mp3")));
+        assert!(paths.iter().any(|p| p.ends_with("sigue-existiendo.mp3")));
+        assert!(!paths.iter().any(|p| p.ends_with("ya-no-existe.mp3")));
+
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
     fn no_borra_nada_fuera_de_la_raiz() {
         let base = temp_dir("fuera");
         let root_a = base.join("catalogo-a");
