@@ -1247,4 +1247,31 @@ mod tests {
             Some("https://github.com/ejemplo/repo")
         );
     }
+
+    #[test]
+    fn valida_raices_portal_prohibidas_y_subcarpetas() {
+        // 1. Rutas del portal: rechazadas. (Si no existen, falla canonicalize;
+        //    si existen, falla el prefijo. El resultado debe ser Err en ambos casos.)
+        assert!(
+            catalog_root_from_path(Path::new("/run/flatpak/doc/00000000/Disco_Canal")).is_err()
+        );
+
+        // 2. La raíz del sistema y el $HOME exacto siguen prohibidos (regla existente).
+        assert!(catalog_root_from_path(Path::new("/")).is_err());
+        if let Some(home) = dirs::home_dir() {
+            assert!(catalog_root_from_path(&home).is_err());
+        }
+
+        // 3. Una subcarpeta real de $HOME es válida (regla que NO debe romperse).
+        let base = std::env::temp_dir().join(format!("mi-catalogo-root-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&base).unwrap();
+        assert!(catalog_root_from_path(&base).is_ok());
+        let _ = fs::remove_dir_all(&base);
+
+        // 4. Una carpeta inexistente falla: canonicalize no puede resolverla.
+        assert!(
+            catalog_root_from_path(Path::new("/definitivamente/no/existe/12345")).is_err()
+        );
+    }
 }
