@@ -524,6 +524,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitstream-io"
+version = "4.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7eff00be299a18769011411c9def0d827e8f2d7bf0c3dbf53633147a8867fd1f"
+dependencies = [
+ "no_std_io2",
+]
+
+[[package]]
 name = "block"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3310,6 +3319,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "matroska"
+version = "0.30.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d3e606fd165c30a7f5daebca07f9707b2cdca959e0b3dd89538e3e0441b7f52"
+dependencies = [
+ "bitstream-io",
+ "phf",
+]
+
+[[package]]
 name = "mediateca-local"
 version = "0.1.0"
 dependencies = [
@@ -3319,6 +3338,8 @@ dependencies = [
  "image",
  "libcosmic",
  "lofty",
+ "matroska",
+ "mp4ameta",
  "open",
  "rbook",
  "rusqlite",
@@ -3446,6 +3467,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "mp4ameta"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "453e991b2efe96c288cbc2d03a19e353504294559ecb6c03067fff5bd824616d"
+
+[[package]]
 name = "mutate_once"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3517,6 +3544,15 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "libc",
+]
+
+[[package]]
+name = "no_std_io2"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "418abd1b6d34fbf6cae440dc874771b0525a604428704c76e48b29a5e67b8003"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

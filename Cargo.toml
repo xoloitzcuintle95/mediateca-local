@@ -28,6 +28,8 @@ rbook = { version = "0.7.12", default-features = false }
 sha2 = "0.11.1"
 tokio = { version = "1.48.0", features = ["full"] }
 walkdir = "2.5"
+mp4ameta = "0.13.0"
+matroska = "0.30.1"
 
 [dev-dependencies]
 zip = { version = "9", default-features = false }
