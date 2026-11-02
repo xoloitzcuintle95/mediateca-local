@@ -288,6 +288,195 @@ fn artist_card<'a>(
         .into()
 }
 
+// ---------- Vista de lista ----------
+
+const LIST_THUMB: f32 = 48.0;
+const LIST_BUDGET: usize = 96;
+
+/// Fila compacta reutilizable: miniatura + títulos + clic igual que la tarjeta.
+fn list_row<'a>(
+    thumb: Element<'a, Message>,
+    title: &str,
+    subtitle: &str,
+    spacing: Spacing,
+    on_press: Message,
+) -> Element<'a, Message> {
+    let content = widget::row::with_capacity(2)
+        .align_y(cosmic::iced::Alignment::Center)
+        .spacing(f32::from(spacing.space_m))
+        .push(widget::container(thumb).width(Length::Fixed(LIST_THUMB)))
+        .push(
+            widget::column::with_capacity(2)
+                .spacing(spacing.space_xxxs)
+                .push(title_block(ellipsize(title, LIST_BUDGET)))
+                .push(line_block(ellipsize(subtitle, LIST_BUDGET))),
+        );
+
+    widget::button::custom(
+        widget::container(content)
+            .width(Length::Fill)
+            .padding(f32::from(spacing.space_xs)),
+    )
+    .class(cosmic::theme::Button::Transparent)
+    .padding(0)
+    .width(Length::Fill)
+    .on_press(on_press)
+    .into()
+}
+
+/// Lista de filas reutilizable a partir de una coleccion de filas.
+pub(super) fn list_from_rows<'a>(
+    rows: Vec<Element<'a, Message>>,
+    spacing: Spacing,
+) -> Element<'a, Message> {
+    let mut column = widget::column::with_capacity(rows.len().max(1))
+        .spacing(spacing.space_xxxs)
+        .width(Length::Fill);
+
+    for row in rows {
+        column = column.push(row);
+    }
+
+    column.into()
+}
+
+/// Filas de álbum: mismas entradas que `album_grid`, mismas acciones.
+pub(super) fn album_list<'a>(
+    albums: Vec<&'a AlbumEntry>,
+    cache_dir: &'a Path,
+    spacing: Spacing,
+) -> Element<'a, Message> {
+    let rows = albums
+        .iter()
+        .map(|album| {
+            let thumb = cover_thumbnail(
+                album.cover_hash.as_deref(),
+                cache_dir,
+                covers::CoverTarget::Music,
+                LIST_THUMB,
+                album.cover_ready,
+            );
+
+            list_row(
+                thumb,
+                &album_title(album),
+                &album_subtitle(album),
+                spacing,
+                Message::OpenAlbum(album.key.clone()),
+            )
+        })
+        .collect();
+
+    list_from_rows(rows, spacing)
+}
+
+/// Filas de artista: mismas entradas que `artist_grid`, mismas acciones.
+pub(super) fn artist_list<'a>(
+    artists: Vec<&'a ArtistEntry>,
+    cache_dir: &'a Path,
+    spacing: Spacing,
+) -> Element<'a, Message> {
+    let rows = artists
+        .iter()
+        .map(|artist| {
+            let thumb = cover_thumbnail(
+                artist.cover_hash.as_deref(),
+                cache_dir,
+                covers::CoverTarget::Music,
+                LIST_THUMB,
+                artist.cover_ready,
+            );
+            let name = if artist.name.is_empty() {
+                fl!("unknown-artist")
+            } else {
+                artist.name.clone()
+            };
+            let album_count = fl!("albums-count", count = artist.albums.len());
+
+            list_row(
+                thumb,
+                &name,
+                &album_count,
+                spacing,
+                Message::OpenArtist(artist.name.clone()),
+            )
+        })
+        .collect();
+
+    list_from_rows(rows, spacing)
+}
+
+/// Filas de libro: mismas entradas que `book_grid`, mismas acciones.
+pub(super) fn book_list<'a>(
+    books: Vec<&'a MediaItem>,
+    cache_dir: &'a Path,
+    spacing: Spacing,
+) -> Element<'a, Message> {
+    let rows = books
+        .iter()
+        .map(|book| {
+            let thumb = cover_thumbnail(
+                book.metadata.cover_hash.as_deref(),
+                cache_dir,
+                covers::CoverTarget::Book,
+                LIST_THUMB,
+                book.cover_ready,
+            );
+            let title = book
+                .metadata
+                .title
+                .as_deref()
+                .filter(|title| !title.trim().is_empty())
+                .unwrap_or(&book.name)
+                .to_owned();
+            let author = book
+                .metadata
+                .creator
+                .as_deref()
+                .map(str::trim)
+                .filter(|author| !author.is_empty())
+                .map_or_else(|| fl!("unknown-author"), ToOwned::to_owned);
+
+            widget::button::custom(
+                widget::row::with_capacity(2)
+                    .align_y(cosmic::iced::Alignment::Center)
+                    .spacing(f32::from(spacing.space_m))
+                    .push(
+                        widget::container(thumb).width(Length::Fixed(LIST_THUMB)),
+                    )
+                    .push(
+                        widget::column::with_capacity(2)
+                            .spacing(spacing.space_xxxs)
+                            .push(title_block(ellipsize(
+                                &title,
+                                LIST_BUDGET,
+                            )))
+                            .push(line_block(ellipsize(
+                                &author,
+                                LIST_BUDGET,
+                            ))),
+                    ),
+            )
+            .class(cosmic::theme::Button::Transparent)
+            .padding(0)
+            .width(Length::Fill)
+            .on_press(Message::ItemClicked(Details {
+                id: book.id,
+                title,
+                subtitle: author,
+                path: book.path.clone(),
+                cover_hash: book.metadata.cover_hash.clone(),
+                cover_ready: book.cover_ready,
+                kind: Kind::Book,
+                open_action: book.open_action,
+            }))
+            .into()
+        })
+        .collect();
+
+    list_from_rows(rows, spacing)
+}
+
 pub(super) fn title_block<'a>(title: String) -> Element<'a, Message> {
     widget::container(
         widget::text::body(title)
