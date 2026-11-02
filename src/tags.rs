@@ -14,7 +14,7 @@ use lofty::error::FileParseError;
 use lofty::file::{FileType, TaggedFileExt};
 use lofty::picture::{Picture, PictureType};
 use lofty::probe::Probe;
-use lofty::tag::{Accessor, Tag};
+use lofty::tag::{Accessor, ItemKey, Tag};
 
 use crate::covers::MAX_COVER_BYTES;
 use crate::model::{TagStatus, TrackMetadata};
@@ -114,6 +114,12 @@ fn read_tags(
     };
 
     let creator = clean(tag.artist().as_deref());
+    // El álbum se agrupa por su artista real (TPE2), no por los créditos del
+    // track: "Doechii feat. X" no debe crear un artista falso. Si el tagger
+    // no escribió TPE2, se recurre al primer artista del track, como antes.
+    let collection_creator = clean(tag.get_string(ItemKey::AlbumArtist))
+        .or_else(|| creator.as_deref().and_then(first_artist))
+        .map(|artist| principal_artist(&artist));
     let collection = clean(tag.album().as_deref());
     let title = clean(tag.title().as_deref());
     let has_any = creator.is_some() || collection.is_some() || title.is_some();
@@ -121,7 +127,7 @@ fn read_tags(
 
     let metadata = TrackMetadata {
         creator: creator.clone(),
-        collection_creator: creator.as_deref().and_then(first_artist),
+        collection_creator,
         collection,
         title: title.or(Some(fallback_title)),
         track_number: tag.track(),
@@ -149,6 +155,22 @@ fn clean(value: Option<&str>) -> Option<String> {
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(ToOwned::to_owned)
+}
+
+/// El artista principal para agrupar: quita el sufijo de colaboraciones
+/// ("feat. X", "ft. X", "featuring X") que muchos taggers escriben dentro del
+/// mismo campo. No toca nombres acreditados con `&` ("Simon & Garfunkel") ni
+/// comas: eso forma parte del nombre, no separa créditos.
+#[must_use]
+pub fn principal_artist(artist: &str) -> String {
+    const SUFFIXES: [&str; 4] = [" feat.", " featuring", " ft.", " ft "];
+    let lower = artist.to_lowercase();
+    let cut = SUFFIXES.iter().filter_map(|suffix| lower.find(suffix)).min();
+
+    match cut {
+        Some(index) if lower.len() == artist.len() => artist[..index].trim().to_owned(),
+        _ => artist.trim().to_owned(),
+    }
 }
 
 /// El primer artista de una lista separada por comas, tal como viene en TPE1.
@@ -230,7 +252,9 @@ mod tests {
 
     use sha2::{Digest, Sha256};
 
-    use super::{fallback_title, filename_track, first_artist, read, read_with_advice};
+    use super::{
+        fallback_title, filename_track, first_artist, principal_artist, read, read_with_advice,
+    };
     use crate::model::TagStatus;
 
     fn temp_dir(name: &str) -> PathBuf {
@@ -265,6 +289,7 @@ mod tests {
     fn mp3_de_prueba() -> Vec<u8> {
         let apic = b"\x00image/jpeg\0\x03\x00\xFF\xD8portada-falsa\xFF\xD9";
         let mut frames = Vec::new();
+        frames.extend(id3_frame(b"TPE2", b"\x00Album Artista\0"));
         frames.extend(id3_frame(b"TPE1", b"\x00Artista\0"));
         frames.extend(id3_frame(b"TALB", b"\x00Album\0"));
         frames.extend(id3_frame(b"TIT2", b"\x00Cancion\0"));
@@ -302,6 +327,10 @@ mod tests {
 
         assert_eq!(con.metadata.status, TagStatus::Complete);
         assert_eq!(con.metadata.creator.as_deref(), Some("Artista"));
+        assert_eq!(
+            con.metadata.collection_creator.as_deref(),
+            Some("Album Artista")
+        );
         assert_eq!(con.metadata.collection.as_deref(), Some("Album"));
         assert_eq!(con.metadata.title.as_deref(), Some("Cancion"));
         assert_eq!(con.metadata.track_number, Some(7));
@@ -339,6 +368,16 @@ mod tests {
             "2024 - Canción"
         );
         assert_eq!(fallback_title(Path::new("01.mp3")), "01");
+    }
+
+    #[test]
+    fn el_artista_principal_quita_el_feat_y_conserva_los_nombres_con_ampersand() {
+        assert_eq!(principal_artist("Doechii feat. Leo Conoza"), "Doechii");
+        assert_eq!(principal_artist("Doechii ft. Mike Escanor"), "Doechii");
+        assert_eq!(principal_artist("Doechii featuring Jstray"), "Doechii");
+        assert_eq!(principal_artist("Simon & Garfunkel"), "Simon & Garfunkel");
+        assert_eq!(principal_artist("Doechii"), "Doechii");
+        assert_eq!(principal_artist(""), "");
     }
 
     #[test]
