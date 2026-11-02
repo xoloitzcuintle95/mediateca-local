@@ -74,6 +74,7 @@ choose-catalog-folder = Elige la carpeta de tu catálogo
 choose-folder = Elegir carpeta…
 catalog-folder-not-utf8 = La ruta elegida no es UTF-8 válido.
 catalog-folder-invalid = La carpeta elegida no se pudo interpretar.
+catalog-folder-portal = Esa carpeta no es accesible directamente. Elige una carpeta real desde tu carpeta personal u otra unidad montada.
 catalog-folder-too-broad = Esa carpeta es demasiado amplia para el catálogo. Elige una carpeta dentro de tu carpeta personal.
 
 aliases = Alias de artistas

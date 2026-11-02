@@ -950,8 +950,28 @@ async fn choose_catalog_folder() -> Result<Option<PathBuf>, String> {
     }
 }
 
+/// Rutas que el portal de documentos de Flatpak expone dentro del sandbox.
+/// Son efímeras (cambian al re-conceder permisos) y no se pueden traducir a
+/// la ruta del host con fiabilidad: con acceso directo al sistema de archivos
+/// ya concedido, la raíz correcta es siempre una ruta del host.
+const DOCUMENT_PORTAL_PREFIX: &str = "/run/flatpak/";
+
 fn catalog_root_from_path(path: &Path) -> Result<String, String> {
-    let root = path
+    // 1-2. Canonicalizar la ruta del selector: resuelve symlinks y montajes
+    // del portal, y garantiza que las comparaciones de prefijo sean exactas.
+    let canonical =
+        fs::canonicalize(path).map_err(|_| fl!("catalog-folder-portal"))?;
+
+    // 3-4. Si después de canonicalizar sigue siendo una ruta del portal,
+    // la carpeta no es utilizable: pedir una carpeta real.
+    if canonical
+        .to_str()
+        .is_some_and(|text| text.starts_with(DOCUMENT_PORTAL_PREFIX))
+    {
+        return Err(fl!("catalog-folder-portal"));
+    }
+
+    let root = canonical
         .to_str()
         .ok_or_else(|| fl!("catalog-folder-not-utf8"))?;
 
@@ -959,10 +979,14 @@ fn catalog_root_from_path(path: &Path) -> Result<String, String> {
         return Err(fl!("catalog-folder-invalid"));
     }
 
-    if is_prohibited_root(path) {
+    // Las reglas existentes se aplican sobre la ruta canónica:
+    // is_prohibited_root rechaza "/" y el $HOME EXACTO únicamente; las
+    // subcarpetas como /home/<usuario>/Disco_Canal siguen siendo válidas.
+    if is_prohibited_root(&canonical) {
         return Err(fl!("catalog-folder-too-broad"));
     }
 
+    // 5. Ruta válida: devolverla para guardar.
     Ok(root.to_owned())
 }
 
@@ -1222,10 +1246,18 @@ mod tests {
 
     #[test]
     fn acepta_una_carpeta_normal() {
+        // La raíz se canonicaliza antes de guardarse: debe existir en disco.
+        let base = std::env::temp_dir().join(format!("mi-catalogo-root-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        fs::create_dir_all(&base).unwrap();
+
+        let canonical = fs::canonicalize(&base).unwrap().to_string_lossy().into_owned();
         assert_eq!(
-            catalog_root_from_path(Path::new("/tmp/catalogo")).unwrap(),
-            "/tmp/catalogo"
+            catalog_root_from_path(&base).unwrap(),
+            canonical,
         );
+
+        let _ = fs::remove_dir_all(&base);
     }
 
     #[test]

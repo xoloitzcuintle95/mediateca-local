@@ -74,6 +74,7 @@ choose-catalog-folder = Choose your catalog folder
 choose-folder = Choose folder…
 catalog-folder-not-utf8 = The selected path is not valid UTF-8.
 catalog-folder-invalid = The selected folder could not be interpreted.
+catalog-folder-portal = That folder is not directly accessible. Choose a real folder from your home directory or another mounted drive.
 catalog-folder-too-broad = That folder is too broad for the catalog. Choose a folder inside your home directory.
 
 aliases = Artist aliases
