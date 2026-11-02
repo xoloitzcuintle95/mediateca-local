@@ -30,6 +30,9 @@ tokio = { version = "1.48.0", features = ["full"] }
 walkdir = "2.5"
 mp4ameta = "0.13.0"
 matroska = "0.30.1"
+# Allocator alternativo: menos fragmentación que el malloc del sistema,
+# reduce el RSS del proceso.
+mimalloc = "0.1"
 
 [dev-dependencies]
 zip = { version = "9", default-features = false }
@@ -66,3 +69,12 @@ features = [
 # libcosmic = { path = "../libcosmic" }
 # cosmic-config = { path = "../libcosmic/cosmic-config" }
 # cosmic-theme = { path = "../libcosmic/cosmic-theme" }
+
+[profile.release]
+# Binario más chico y menos RAM: optimización por tamaño, LTO entre crates,
+# una sola unidad de codegen, sin landing pads de panic, símbolos fuera.
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

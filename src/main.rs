@@ -16,6 +16,11 @@ mod ui;
 mod video;
 mod video_tags;
 
+// Allocator global: mimalloc reduce la fragmentación y el RSS frente al
+// malloc del sistema (glibc).
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 fn main() -> cosmic::iced::Result {
     // Get the system's preferred languages.
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
