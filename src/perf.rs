@@ -40,6 +40,25 @@ impl Drop for Timer {
     }
 }
 
+/// RSS del proceso en MiB, leído de `/proc/self/statm` (Linux, página 4 KiB).
+pub fn log_rss(label: &str) {
+    if !enabled() {
+        return;
+    }
+    let Ok(statm) = std::fs::read_to_string("/proc/self/statm") else {
+        return;
+    };
+    let Some(paginas) = statm
+        .split_whitespace()
+        .nth(1)
+        .and_then(|valor| valor.parse::<u64>().ok())
+    else {
+        return;
+    };
+    let mib = paginas as f64 * 4096.0 / 1024.0 / 1024.0;
+    eprintln!("[perf] {mib:.1} MB  {label} (rss)");
+}
+
 /// Conteo puntual (archivos encontrados, etc.).
 pub fn count(nombre: &str, valor: usize) {
     if enabled() {

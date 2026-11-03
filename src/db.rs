@@ -352,6 +352,7 @@ pub fn load_cached() -> Result<CachedCatalog, String> {
 }
 
 fn load_cached_from(database: &Path, cache: &Path) -> Result<CachedCatalog, String> {
+    let load_guard = perf::Timer::start("load.cached");
     let connection = open_at(database)?;
     let aliases = load_aliases_from(&connection)?;
     let mut items = load_all(&connection)?;
@@ -359,6 +360,8 @@ fn load_cached_from(database: &Path, cache: &Path) -> Result<CachedCatalog, Stri
     let build_guard = perf::Timer::start("library.build");
     let library = Library::build(&items, &aliases);
     drop(build_guard);
+    perf::log_rss("load.cached");
+    drop(load_guard);
 
     Ok(CachedCatalog {
         items,
