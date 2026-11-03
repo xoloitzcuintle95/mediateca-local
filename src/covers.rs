@@ -19,9 +19,11 @@ use crate::media;
 use crate::model::{APP_ID, Kind, LEGACY_APP_IDS};
 
 /// Versión del algoritmo de miniaturas. Cambiarla invalida el caché anterior.
-pub const THUMBNAIL_VERSION: &str = "v2";
-/// Ancho base de todas las miniaturas.
-pub const THUMBNAIL_WIDTH: u32 = 512;
+pub const THUMBNAIL_VERSION: &str = "v3";
+/// Ancho base de todas las miniaturas. 320 px basta: las tarjetas se dibujan
+/// a 220 px y la lista a 48 px; a 512 el caché RGBA de iced consumía ~1 MB
+/// por portada y con ~90 álbumes el RSS se iba a 100+ MB.
+pub const THUMBNAIL_WIDTH: u32 = 320;
 
 /// Tope de bytes de una portada antes de leerla, decodificarla o hashearla.
 pub const MAX_COVER_BYTES: usize = 8 * 1024 * 1024;
@@ -553,8 +555,11 @@ mod tests {
         let image = image::open(&path).unwrap();
 
         assert_eq!(image.width(), THUMBNAIL_WIDTH);
-        assert_eq!(image.height(), 512);
-        let center = image.to_rgb8().get_pixel(256, 256).0;
+        assert_eq!(image.height(), THUMBNAIL_WIDTH);
+        let center = image
+            .to_rgb8()
+            .get_pixel(THUMBNAIL_WIDTH / 2, THUMBNAIL_WIDTH / 2)
+            .0;
         assert!(center[2] > center[0], "el centro debe ser el interior azul");
 
         let _ = fs::remove_dir_all(dir);
@@ -570,7 +575,7 @@ mod tests {
             let hash = ensure_thumbnail(&cache, &data, target).unwrap();
             let image = image::open(thumbnail_path(&cache, &hash, target)).unwrap();
             assert_eq!(image.width(), THUMBNAIL_WIDTH);
-            assert_eq!(image.height(), 768);
+            assert_eq!(image.height(), THUMBNAIL_WIDTH * 3 / 2);
         }
 
         let _ = fs::remove_dir_all(dir);
@@ -586,7 +591,7 @@ mod tests {
         let image = image::open(thumbnail_path(&cache, &hash, CoverTarget::Music)).unwrap();
 
         assert_eq!(image.width(), THUMBNAIL_WIDTH);
-        assert_eq!(image.height(), 512);
+        assert_eq!(image.height(), THUMBNAIL_WIDTH);
 
         let _ = fs::remove_dir_all(dir);
     }
@@ -626,10 +631,7 @@ mod tests {
         let cache = dir.join("cache");
         let data = vec![0u8; MAX_COVER_BYTES + 1];
 
-        assert_eq!(
-            ensure_thumbnail(&cache, &data, CoverTarget::Music),
-            None
-        );
+        assert_eq!(ensure_thumbnail(&cache, &data, CoverTarget::Music), None);
         assert_eq!(thumbnail_count(&cache), 0);
 
         let _ = fs::remove_dir_all(dir);
@@ -643,10 +645,7 @@ mod tests {
         // cabecera PNG; nunca se asigna ese búfer en la prueba.
         let data = png_header(100_000, 100_000);
 
-        assert_eq!(
-            ensure_thumbnail(&cache, &data, CoverTarget::Music),
-            None
-        );
+        assert_eq!(ensure_thumbnail(&cache, &data, CoverTarget::Music), None);
         assert_eq!(thumbnail_count(&cache), 0);
 
         let _ = fs::remove_dir_all(dir);
