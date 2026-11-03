@@ -13,7 +13,6 @@ use crate::covers;
 use crate::fl;
 use crate::library::{AlbumEntry, ArtistEntry, TrackEntry};
 use crate::model::{Kind, ViewMode};
-use crate::perf;
 
 use super::CatalogView;
 use super::cards::{album_grid, album_list, artist_grid, artist_list, cover_thumbnail};
@@ -28,19 +27,12 @@ pub(super) fn artists<'a>(
     query: &str,
     spacing: Spacing,
 ) -> Element<'a, Message> {
-    let _view_guard = perf::Timer::start("view.artists");
-
-    let artists: Vec<&ArtistEntry> = {
-        let filter_guard = perf::Timer::start("filter.artists");
-        let artists: Vec<&ArtistEntry> = state
-            .library
-            .artists
-            .iter()
-            .filter(|artist| artist_matches(artist, query))
-            .collect();
-        drop(filter_guard);
-        artists
-    };
+    let artists: Vec<&ArtistEntry> = state
+        .library
+        .artists
+        .iter()
+        .filter(|artist| artist_matches(artist, query))
+        .collect();
 
     let mut content = page_header(
         fl!("nav-music"),
@@ -67,8 +59,6 @@ pub(super) fn artist_albums<'a>(
     query: &str,
     spacing: Spacing,
 ) -> Element<'a, Message> {
-    let _view_guard = perf::Timer::start("view.artist_albums");
-
     let artist = state
         .library
         .artists
@@ -81,18 +71,13 @@ pub(super) fn artist_albums<'a>(
         artist_name.to_owned()
     };
 
-    let albums: Vec<&AlbumEntry> = {
-        let filter_guard = perf::Timer::start("filter.albums");
-        let albums: Vec<&AlbumEntry> = artist.map_or_else(Vec::new, |artist| {
-            artist
-                .albums
-                .iter()
-                .filter(|album| album_matches(album, query))
-                .collect()
-        });
-        drop(filter_guard);
-        albums
-    };
+    let albums: Vec<&AlbumEntry> = artist.map_or_else(Vec::new, |artist| {
+        artist
+            .albums
+            .iter()
+            .filter(|album| album_matches(album, query))
+            .collect()
+    });
 
     let breadcrumb = widget::row::with_capacity(3)
         .push(widget::button::link(level_label(Kind::Music, 0)).on_press(Message::GoToArtists))
@@ -153,16 +138,11 @@ pub(super) fn album_detail<'a>(
         album.artist.clone()
     };
 
-    let tracks: Vec<&TrackEntry> = {
-        let filter_guard = perf::Timer::start("filter.tracks");
-        let tracks: Vec<&TrackEntry> = album
-            .tracks
-            .iter()
-            .filter(|track| track_matches(track, query))
-            .collect();
-        drop(filter_guard);
-        tracks
-    };
+    let tracks: Vec<&TrackEntry> = album
+        .tracks
+        .iter()
+        .filter(|track| track_matches(track, query))
+        .collect();
 
     let breadcrumb = if from_overview {
         widget::row::with_capacity(3)

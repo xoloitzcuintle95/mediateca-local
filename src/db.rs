@@ -21,7 +21,6 @@ use crate::model::{
     Kind, LEGACY_APP_IDS, MediaItem, MediaOrigin, ScanOutcome, ScanSummary, ScanWarning, TagStatus,
     TrackMetadata,
 };
-use crate::perf;
 use crate::scanner;
 use crate::tags;
 use crate::video_tags;
@@ -357,11 +356,7 @@ fn load_cached_from(database: &Path, cache: &Path) -> Result<CachedCatalog, Stri
     let aliases = load_aliases_from(&connection)?;
     let mut items = load_all(&connection)?;
     mark_cover_ready(&mut items, cache);
-    let build_guard = perf::Timer::start("library.build");
     let library = Library::build(&items, &aliases);
-    drop(build_guard);
-    perf::log_rss("load.cached");
-    drop(load_guard);
 
     Ok(CachedCatalog {
         items,
@@ -410,9 +405,7 @@ fn sync_with(root: &Path, database: &Path, cache: &Path) -> Result<ScanOutcome, 
         }
     };
 
-    let scan_guard = perf::Timer::start("scan.total");
     let scan = scanner::scan(&canonical_root);
-    perf::count("scan.archivos", scan.summary.total());
     let complete = scan.summary.errors == 0;
     let has_cached_under_root = cached_items
         .iter()
@@ -421,24 +414,15 @@ fn sync_with(root: &Path, database: &Path, cache: &Path) -> Result<ScanOutcome, 
     let empty_root = items.is_empty() && has_cached_under_root;
     let stats = enrich_items(&mut items, cache, &cached_by_path);
 
-    let deleted = {
-        let write_guard = perf::Timer::start("scan.write");
-        let result = write_scan(
-            &mut connection,
-            &canonical_root,
-            &items,
-            complete && !empty_root,
-        );
-        drop(write_guard);
-        result
-    }?;
-    drop(scan_guard);
-
-    let build_guard = perf::Timer::start("library.build");
+    let deleted = write_scan(
+        &mut connection,
+        &canonical_root,
+        &items,
+        complete && !empty_root,
+    )?;
     let mut items = load_all(&connection)?;
     mark_cover_ready(&mut items, cache);
     let library = Library::build(&items, &aliases);
-    drop(build_guard);
 
     Ok(ScanOutcome {
         summary: ScanSummary::from_items(&items, scan.summary.skipped, scan.summary.errors),

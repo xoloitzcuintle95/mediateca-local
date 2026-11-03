@@ -11,7 +11,6 @@ use crate::app::{Message, PAGE_SIZE, PageTarget, total_pages};
 use crate::fl;
 use crate::library::AlbumEntry;
 use crate::model::{Kind, ViewMode};
-use crate::perf;
 
 use super::CatalogView;
 use super::cards::{album_grid, album_list};
@@ -25,8 +24,6 @@ pub(super) fn overview<'a>(
     _query: &str,
     spacing: Spacing,
 ) -> Element<'a, Message> {
-    let _view_guard = perf::Timer::start("view.overview");
-
     let total = state.overview_visible.len();
     let total_paginas = total_pages(total);
 

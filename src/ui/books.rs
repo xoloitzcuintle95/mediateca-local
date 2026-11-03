@@ -9,7 +9,6 @@ use cosmic::iced::Length;
 use crate::app::Message;
 use crate::fl;
 use crate::model::{Kind, MediaItem, ViewMode};
-use crate::perf;
 
 use super::CatalogView;
 use super::cards::{book_grid, book_list};
@@ -21,18 +20,11 @@ pub(super) fn books_view<'a>(
     query: &str,
     spacing: Spacing,
 ) -> Element<'a, Message> {
-    let _view_guard = perf::Timer::start("view.books");
-
-    let books: Vec<&MediaItem> = {
-        let filter_guard = perf::Timer::start("filter.books");
-        let books: Vec<&MediaItem> = state
-            .items
-            .iter()
-            .filter(|item| item.kind == Kind::Book && book_matches(item, query))
-            .collect();
-        drop(filter_guard);
-        books
-    };
+    let books: Vec<&MediaItem> = state
+        .items
+        .iter()
+        .filter(|item| item.kind == Kind::Book && book_matches(item, query))
+        .collect();
 
     let mut content = page_header(
         fl!("nav-books"),
