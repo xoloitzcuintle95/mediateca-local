@@ -37,11 +37,6 @@ mimalloc = "0.1"
 [dev-dependencies]
 zip = { version = "9", default-features = false }
 
-[features]
-# Modo de desarrollo para generar catálogo sintético (src/seed.rs).
-# Apagado por defecto: nunca entra en el binario release normal.
-seed = []
-
 [build-dependencies]
 xdgen = "0.1"
 

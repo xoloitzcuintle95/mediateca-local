@@ -305,38 +305,6 @@ fn load_aliases_from(connection: &Connection) -> Result<AliasMap, String> {
     Ok(aliases)
 }
 
-/// Siembra filas sintéticas en la base (solo desarrollo; ver `crate::seed`).
-///
-/// Reusa `write_scan` con `allow_delete = false`: una sola transacción para
-/// todas las filas, sin borrados.
-///
-/// # Errors
-/// Si falla abrir la base o la transacción.
-#[cfg(feature = "seed")]
-pub fn seed_test_catalog(items: &[MediaItem]) -> Result<(), String> {
-    let mut connection = open_at(&db_path()?)?;
-    write_scan(&mut connection, Path::new("/"), items, false)?;
-    Ok(())
-}
-
-/// Número de filas cuyo path está bajo `raiz` (idempotencia del sembrado).
-///
-/// # Errors
-/// Si falla abrir la base.
-#[cfg(feature = "seed")]
-pub fn seed_filas_bajo(raiz: &Path) -> Result<usize, String> {
-    let connection = open_at(&db_path()?)?;
-    let prefix = raiz.join("").to_string_lossy().into_owned();
-    connection
-        .query_row(
-            "SELECT COUNT(*) FROM files WHERE substr(path, 1, length(?1)) = ?1",
-            [&prefix],
-            |row| row.get::<_, i64>(0),
-        )
-        .map(|n| usize::try_from(n).unwrap_or(0))
-        .map_err(|error| format!("No se pudo contar el catálogo: {error}"))
-}
-
 /// Catálogo ya guardado, para mostrarlo antes del escaneo.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CachedCatalog {
