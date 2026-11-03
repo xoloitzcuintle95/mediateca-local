@@ -72,9 +72,10 @@ features = [
 
 [profile.release]
 # Binario más chico y menos RAM: optimización por tamaño, LTO entre crates,
-# una sola unidad de codegen, sin landing pads de panic, símbolos fuera.
+# una sola unidad de codegen, símbolos fuera. El panic queda en "unwind"
+# (el default): `catch_unwind` del scanner contiene archivos corruptos;
+# con "abort" un panic tumba la app completa.
 opt-level = "z"
 lto = true
 codegen-units = 1
-panic = "abort"
 strip = true
