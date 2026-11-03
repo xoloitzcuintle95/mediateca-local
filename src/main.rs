@@ -12,6 +12,8 @@ mod model;
 mod opener;
 mod perf;
 mod scanner;
+#[cfg(feature = "seed")]
+mod seed;
 mod tags;
 mod ui;
 mod video;
@@ -23,6 +25,14 @@ mod video_tags;
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 fn main() -> cosmic::iced::Result {
+    // Modo de desarrollo: sembrar catálogo sintético (feature `seed`).
+    #[cfg(feature = "seed")]
+    if std::env::var_os("MEDIATECA_SEED").is_some()
+        && let Err(error) = seed::ejecutar()
+    {
+        eprintln!("no se pudo sembrar el catálogo de prueba: {error}");
+    }
+
     // Get the system's preferred languages.
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
 
