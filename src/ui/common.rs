@@ -2,13 +2,15 @@
 
 //! Helpers compartidos de la interfaz: cabeceras, listas, etiquetas y búsqueda.
 
+use std::sync::LazyLock;
+
 use cosmic::Element;
 use cosmic::cosmic_theme::Spacing;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::{Alignment, Length};
 use cosmic::widget::{self, icon};
 
-use crate::app::Message;
+use crate::app::{Message, PageTarget};
 use crate::fl;
 use crate::library::{AlbumEntry, ArtistEntry, TrackEntry};
 use crate::media;
@@ -40,6 +42,50 @@ pub(super) fn page_header<'a>(
         .spacing(spacing.space_s)
         .width(Length::Fill)
         .push(title_row)
+}
+
+/// Id fijo del scrollable del overview (para el scroll al inicio al paginar).
+pub(crate) static OVERVIEW_SCROLL_ID: LazyLock<cosmic::iced::core::widget::Id> =
+    LazyLock::new(|| cosmic::iced::core::widget::Id::new("overview-list"));
+
+/// Barra de paginación: Primera/Anterior/"Página X de Y"/Siguiente/Última.
+///
+/// Deshabilita los botones en los extremos; el llamador decide si se dibuja.
+pub(super) fn page_bar<'a>(
+    pagina: usize,
+    total_paginas: usize,
+    destino: PageTarget,
+    spacing: Spacing,
+) -> Element<'a, Message> {
+    let en_primera = pagina == 0;
+    let en_ultima = pagina + 1 >= total_paginas;
+    let pagina_humana = pagina + 1;
+
+    widget::row::with_capacity(5)
+        .spacing(spacing.space_s)
+        .align_y(Alignment::Center)
+        .push(
+            widget::button::text(fl!("pagina-primera"))
+                .on_press_maybe((!en_primera).then_some(Message::FirstPage(destino))),
+        )
+        .push(
+            widget::button::text(fl!("pagina-anterior"))
+                .on_press_maybe((!en_primera).then_some(Message::PrevPage(destino))),
+        )
+        .push(widget::text::body(fl!(
+            "pagina-posicion",
+            pagina = pagina_humana,
+            total = total_paginas
+        )))
+        .push(
+            widget::button::text(fl!("pagina-siguiente"))
+                .on_press_maybe((!en_ultima).then_some(Message::NextPage(destino))),
+        )
+        .push(
+            widget::button::text(fl!("pagina-ultima"))
+                .on_press_maybe((!en_ultima).then_some(Message::LastPage(destino))),
+        )
+        .into()
 }
 
 /// Alternador de modo de vista: cuadrícula o lista. Tema-nativo; el activo
@@ -124,7 +170,7 @@ pub(super) fn count_kind(items: &[MediaItem], kind: Kind) -> usize {
     items.iter().filter(|item| item.kind == kind).count()
 }
 
-pub(super) fn album_matches(album: &AlbumEntry, query: &str) -> bool {
+pub(crate) fn album_matches(album: &AlbumEntry, query: &str) -> bool {
     query.is_empty() || album.search_key.contains(query)
 }
 

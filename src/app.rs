@@ -12,6 +12,7 @@ use crate::fl;
 use crate::library::{AlbumKey, AliasMap, Library};
 use crate::model::{Kind, MediaItem, OpenAction, ScanOutcome, ScanWarning, ViewMode};
 use crate::opener;
+use crate::ui::common::album_matches;
 use crate::ui::{self, CatalogView};
 use crate::video::VideoLibrary;
 use cosmic::Application;
@@ -77,6 +78,25 @@ pub struct AppModel {
     alias_error: Option<String>,
     /// Thumbnail cache directory.
     cache_dir: PathBuf,
+    /// Índices visibles del overview tras el filtro cacheado.
+    overview_visible: Vec<usize>,
+    /// Página actual del overview (0-indexada).
+    overview_page: usize,
+}
+
+/// Tamaño de página del overview.
+pub(crate) const PAGE_SIZE: usize = 60;
+
+/// Número de páginas para `len` elementos; siempre al menos 1.
+#[must_use]
+pub(crate) fn total_pages(len: usize) -> usize {
+    len.div_ceil(PAGE_SIZE).max(1)
+}
+
+/// Destinos de las órdenes de paginación.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PageTarget {
+    Overview,
 }
 
 /// Messages emitted by the application and its widgets.
@@ -106,6 +126,14 @@ pub enum Message {
     CatalogFolderChosen(Result<Option<PathBuf>, String>),
     /// Se cambió el modo de visualización de la biblioteca.
     ViewModeChanged(ViewMode),
+    /// Destino de una orden de paginación.
+    FirstPage(PageTarget),
+    /// Ir a la página anterior del destino.
+    PrevPage(PageTarget),
+    /// Ir a la página siguiente del destino.
+    NextPage(PageTarget),
+    /// Ir a la última página del destino.
+    LastPage(PageTarget),
     /// Primer clic en un elemento; espera a ver si llega un doble clic.
     ItemClicked(Details),
     /// Confirma el clic simple si no llegó un segundo clic a tiempo.
@@ -244,6 +272,8 @@ impl cosmic::Application for AppModel {
             canonical_input: String::new(),
             alias_error: None,
             cache_dir: covers::cache_dir().unwrap_or_default(),
+            overview_visible: Vec::new(),
+            overview_page: 0,
         };
 
         // Muestra de inmediato lo guardado; el escaneo arranca después.
@@ -344,6 +374,8 @@ impl cosmic::Application for AppModel {
             items: &self.items,
             search: &self.search,
             view_mode: self.view_mode,
+            overview_visible: &self.overview_visible,
+            overview_page: self.overview_page,
             scan_state: &self.scan_state,
             deleted: self.deleted,
             warning: self.warning.as_ref(),
@@ -371,6 +403,8 @@ impl cosmic::Application for AppModel {
                         self.aliases = cached.aliases;
                         self.video_library = VideoLibrary::build(&self.items);
                         self.validate_route();
+                        self.overview_page = 0;
+                        self.recalcular_overview();
                     }
                     Err(error) => {
                         eprintln!("no se pudo cargar el catálogo guardado: {error}");
@@ -423,6 +457,8 @@ impl cosmic::Application for AppModel {
                         self.warning = outcome.warning;
                         self.scan_state = ScanState::Idle;
                         self.validate_route();
+                        self.overview_page = 0;
+                        self.recalcular_overview();
                     }
                     Err(error) => {
                         self.scan_state = ScanState::Failed(error);
@@ -444,6 +480,8 @@ impl cosmic::Application for AppModel {
 
             Message::SearchChanged(search) => {
                 self.search = search;
+                self.overview_page = 0;
+                self.recalcular_overview();
                 Task::none()
             }
 
@@ -454,17 +492,41 @@ impl cosmic::Application for AppModel {
                 self.view_mode = mode;
                 self.config.view_mode = mode.as_str().to_owned();
                 self.save_config();
+                self.overview_page = 0;
                 Task::none()
+            }
+
+            Message::FirstPage(PageTarget::Overview) => {
+                self.overview_page = 0;
+                scroll_overview_al_inicio()
+            }
+
+            Message::PrevPage(PageTarget::Overview) => {
+                self.overview_page = self.overview_page.saturating_sub(1);
+                scroll_overview_al_inicio()
+            }
+
+            Message::NextPage(PageTarget::Overview) => {
+                self.overview_page =
+                    (self.overview_page + 1).min(total_pages(self.overview_visible.len()) - 1);
+                scroll_overview_al_inicio()
+            }
+
+            Message::LastPage(PageTarget::Overview) => {
+                self.overview_page = total_pages(self.overview_visible.len()) - 1;
+                scroll_overview_al_inicio()
             }
 
             Message::OpenArtist(artist) => {
                 self.close_details();
                 self.music_route = MusicRoute::Albums { artist };
+                self.overview_page = 0;
                 Task::none()
             }
 
             Message::OpenAlbum(key) => {
                 self.close_details();
+                self.overview_page = 0;
 
                 if matches!(self.nav.active_data::<Page>(), Some(Page::All)) {
                     self.overview_album = Some(key);
@@ -477,12 +539,14 @@ impl cosmic::Application for AppModel {
             Message::GoToArtists => {
                 self.close_details();
                 self.music_route = MusicRoute::Artists;
+                self.overview_page = 0;
                 Task::none()
             }
 
             Message::GoToOverview => {
                 self.close_details();
                 self.overview_album = None;
+                self.overview_page = 0;
                 Task::none()
             }
 
@@ -678,6 +742,7 @@ impl cosmic::Application for AppModel {
     /// Called when a nav item is selected.
     fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<cosmic::Action<Self::Message>> {
         self.close_details();
+        self.overview_page = 0;
         self.nav.activate(id);
 
         match self.nav.active_data::<Page>().copied() {
@@ -737,6 +802,27 @@ impl AppModel {
     fn rebuild_library(&mut self) {
         self.library = Library::build(&self.items, &self.aliases);
         self.validate_route();
+        // El clamp mantiene la página si sigue siendo válida.
+        self.recalcular_overview();
+    }
+
+    /// Recalcula los índices visibles del overview con el filtro actual.
+    ///
+    /// El clamp es la red de seguridad cuando la lista encoge sin reset
+    /// explícito de página.
+    fn recalcular_overview(&mut self) {
+        let query = self.search.trim().to_lowercase();
+        self.overview_visible = self
+            .library
+            .albums
+            .iter()
+            .enumerate()
+            .filter(|(_, album)| album_matches(album, &query))
+            .map(|(indice, _)| indice)
+            .collect();
+        self.overview_page = self
+            .overview_page
+            .min(total_pages(self.overview_visible.len()) - 1);
     }
 
     /// Cierra el panel de detalles y descarta cualquier clic pendiente.
@@ -798,6 +884,8 @@ impl AppModel {
         self.video_library = VideoLibrary::default();
         self.deleted = 0;
         self.warning = None;
+        self.overview_page = 0;
+        self.recalcular_overview();
         self.scan_state = ScanState::Idle;
         self.music_route = MusicRoute::default();
         self.video_route = VideoRoute::default();
@@ -962,6 +1050,18 @@ fn repository_url_from(value: &str) -> Option<&str> {
     let url = value.trim();
 
     is_https_url(url).then_some(url)
+}
+
+/// Scrolls the overview list back to the top after a page change.
+fn scroll_overview_al_inicio() -> Task<cosmic::Action<Message>> {
+    cosmic::iced::widget::scrollable::scroll_to(
+        ui::common::OVERVIEW_SCROLL_ID.clone(),
+        cosmic::iced::widget::scrollable::AbsoluteOffset {
+            x: Some(0.0),
+            y: Some(0.0),
+        },
+    )
+    .map(cosmic::Action::App)
 }
 
 async fn open_file(path: PathBuf) -> Result<(), String> {
@@ -1177,6 +1277,8 @@ mod tests {
             warning: None,
             search: String::new(),
             view_mode: ViewMode::default(),
+            overview_visible: Vec::new(),
+            overview_page: 0,
             music_route: MusicRoute::Albums {
                 artist: String::from("Doechii"),
             },
@@ -1356,5 +1458,123 @@ mod tests {
 
         assert_eq!(app.view_mode, ViewMode::Grid);
         assert_eq!(app.config.view_mode, String::from("grid"));
+    }
+
+    fn item_de_prueba(nombre: &str, artista: &str, album: &str) -> MediaItem {
+        MediaItem {
+            id: 0,
+            path: format!("/musica/{album}/{nombre}"),
+            name: nombre.to_owned(),
+            kind: Kind::Music,
+            mtime: 1,
+            size: 1,
+            origin: crate::model::MediaOrigin::LocalFile,
+            open_action: OpenAction::XdgOpen,
+            cover_ready: false,
+            metadata: crate::model::TrackMetadata {
+                creator: Some(artista.to_owned()),
+                collection_creator: Some(artista.to_owned()),
+                collection: Some(album.to_owned()),
+                title: Some(nombre.to_owned()),
+                status: crate::model::TagStatus::Complete,
+                ..crate::model::TrackMetadata::default()
+            },
+        }
+    }
+
+    #[test]
+    fn buscar_reinicia_la_pagina() {
+        let mut app = app_con_detalles_abiertos();
+        app.overview_visible = (0..300).collect();
+        app.overview_page = 4;
+
+        let _ = app.update(Message::SearchChanged(String::from("algo")));
+
+        assert_eq!(app.overview_page, 0);
+    }
+
+    #[test]
+    fn total_pages_nunca_es_cero() {
+        assert_eq!(total_pages(0), 1);
+        assert_eq!(total_pages(1), 1);
+        assert_eq!(total_pages(60), 1);
+        assert_eq!(total_pages(61), 2);
+    }
+
+    #[test]
+    fn paginas_vacias_no_paniquean() {
+        let mut app = app_con_detalles_abiertos();
+        app.overview_visible.clear();
+        app.overview_page = 0;
+
+        let _ = app.update(Message::NextPage(PageTarget::Overview));
+        let _ = app.update(Message::PrevPage(PageTarget::Overview));
+        let _ = app.update(Message::LastPage(PageTarget::Overview));
+        let _ = app.update(Message::FirstPage(PageTarget::Overview));
+
+        assert_eq!(app.overview_page, 0);
+        assert_eq!(total_pages(0), 1);
+    }
+
+    #[test]
+    fn los_extremos_no_avanzan_ni_retroceden() {
+        let mut app = app_con_detalles_abiertos();
+        app.overview_visible = (0..300).collect(); // 5 páginas
+
+        app.overview_page = 0;
+        let _ = app.update(Message::PrevPage(PageTarget::Overview));
+        assert_eq!(app.overview_page, 0);
+
+        app.overview_page = 4;
+        let _ = app.update(Message::NextPage(PageTarget::Overview));
+        assert_eq!(app.overview_page, 4);
+
+        let _ = app.update(Message::LastPage(PageTarget::Overview));
+        assert_eq!(app.overview_page, 4);
+        let _ = app.update(Message::FirstPage(PageTarget::Overview));
+        assert_eq!(app.overview_page, 0);
+    }
+
+    #[test]
+    fn el_clamp_ajusta_cuando_la_biblioteca_encoge() {
+        let mut app = app_con_detalles_abiertos();
+        app.items = vec![
+            item_de_prueba("01 - A.mp3", "Doechii", "Álbum Uno"),
+            item_de_prueba("02 - B.mp3", "Doechii", "Álbum Dos"),
+            item_de_prueba("03 - C.mp3", "Otro Artista", "Álbum Tres"),
+        ];
+        app.library = Library::build(&app.items, &std::collections::HashMap::new());
+        app.overview_page = 9;
+
+        app.recalcular_overview();
+
+        // Con 3 álbumes hay una sola página: la 9 se ajusta a 0.
+        assert_eq!(app.overview_visible.len(), 3);
+        assert_eq!(app.overview_page, 0);
+    }
+
+    #[test]
+    fn los_indices_cacheados_coinciden_con_el_filtro_directo() {
+        let mut app = app_con_detalles_abiertos();
+        app.items = vec![
+            item_de_prueba("01 - Una Canción.mp3", "Doechii", "Álbum Sol"),
+            item_de_prueba("02 - Otra.mp3", "Artista Raro", "Álbum Luna"),
+            item_de_prueba("03 - Estrella.mp3", "Tercero", "Álbum Cometa"),
+        ];
+        app.library = Library::build(&app.items, &std::collections::HashMap::new());
+        app.search = String::from("una");
+
+        app.recalcular_overview();
+
+        let directo: Vec<usize> = app
+            .library
+            .albums
+            .iter()
+            .enumerate()
+            .filter(|(_, album)| album_matches(album, "una"))
+            .map(|(indice, _)| indice)
+            .collect();
+        assert_eq!(app.overview_visible, directo);
+        assert_eq!(app.overview_visible.len(), 2);
     }
 }

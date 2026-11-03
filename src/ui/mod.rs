@@ -4,7 +4,7 @@
 
 mod books;
 mod cards;
-mod common;
+pub(crate) mod common;
 mod music;
 mod overview;
 mod root;

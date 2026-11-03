@@ -28,6 +28,10 @@ pub struct CatalogView<'a> {
     pub search: &'a str,
     /// Modo de visualización de las vistas con cuadrícula.
     pub view_mode: crate::model::ViewMode,
+    /// Índices visibles del overview tras el filtro cacheado.
+    pub overview_visible: &'a [usize],
+    /// Página actual del overview (0-indexada).
+    pub overview_page: usize,
     pub scan_state: &'a ScanState,
     pub deleted: usize,
     pub warning: Option<&'a ScanWarning>,
