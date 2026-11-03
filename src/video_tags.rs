@@ -9,8 +9,8 @@
 
 use std::path::Path;
 
-use matroska::TagValue;
 use crate::model::TagStatus;
+use matroska::TagValue;
 
 /// Etiquetas leídas de un video. Son solo datos; nunca se escriben al archivo.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -113,9 +113,7 @@ fn read_mkv(path: &Path) -> Option<VideoTags> {
 
             match simple.name.to_ascii_uppercase().as_str() {
                 "TITLE" if title.is_none() => title = Some(value.to_owned()),
-                "ARTIST" | "PERFORMEDBY" if creator.is_none() => {
-                    creator = Some(value.to_owned())
-                }
+                "ARTIST" | "PERFORMEDBY" if creator.is_none() => creator = Some(value.to_owned()),
                 "DATE_RECORDED" | "DATE" if year.is_none() => {
                     year = value.get(..4).and_then(|s| s.parse().ok());
                 }

@@ -440,12 +440,7 @@ fn enrich_items(
             scope.spawn(|| {
                 for item in chunk
                     .iter_mut()
-                    .filter(|item| {
-                        matches!(
-                            item.kind,
-                            Kind::Music | Kind::Book | Kind::Video
-                        )
-                    })
+                    .filter(|item| matches!(item.kind, Kind::Music | Kind::Book | Kind::Video))
                 {
                     if let Some(previous) = cached.get(&item.path)
                         && can_reuse_metadata(previous, item)
@@ -512,9 +507,10 @@ fn enrich_item_inner(item: &mut MediaItem, cache: &Path) {
         }
         Kind::Book => {
             let read = epub::read(path);
-            let cover_hash = read.cover.as_deref().and_then(|data| {
-                covers::ensure_thumbnail(cache, data, covers::CoverTarget::Book)
-            });
+            let cover_hash = read
+                .cover
+                .as_deref()
+                .and_then(|data| covers::ensure_thumbnail(cache, data, covers::CoverTarget::Book));
 
             item.cover_ready = cover_hash.is_some();
             item.metadata = TrackMetadata {

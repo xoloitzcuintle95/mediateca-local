@@ -66,10 +66,7 @@ pub fn scan(root: &Path) -> ScanResult {
         // Se omite y se cuenta como error para que el escaneo sea incompleto.
         let Some(path_text) = path.to_str() else {
             summary.errors += 1;
-            eprintln!(
-                "se omite un archivo con ruta no UTF-8: {}",
-                path.display()
-            );
+            eprintln!("se omite un archivo con ruta no UTF-8: {}", path.display());
             continue;
         };
 
@@ -184,7 +181,10 @@ mod tests {
 
         assert_eq!(result.items.len(), 1);
         assert_eq!(result.items[0].name, "valida.mp3");
-        assert_eq!(result.items[0].path, dir.join("valida.mp3").to_str().unwrap());
+        assert_eq!(
+            result.items[0].path,
+            dir.join("valida.mp3").to_str().unwrap()
+        );
         assert_eq!(result.summary.errors, 2);
         assert_eq!(result.summary.music, 1);
 

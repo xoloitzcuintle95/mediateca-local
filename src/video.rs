@@ -383,9 +383,7 @@ fn variant_sort_key(variant: &VideoVariant) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        clean_episode_title, parse_name, parse_video_name, year_in_name, VideoLibrary,
-    };
+    use super::{VideoLibrary, clean_episode_title, parse_name, parse_video_name, year_in_name};
     use crate::model::{Kind, MediaItem, MediaOrigin, OpenAction, TrackMetadata};
 
     fn video(name: &str) -> MediaItem {

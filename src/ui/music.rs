@@ -18,8 +18,7 @@ use super::CatalogView;
 use super::cards::{album_grid, album_list, artist_grid, artist_list, cover_thumbnail};
 use super::common::{
     album_matches, album_title, artist_matches, empty, level_label, page_header, scrollable,
-    view_mode_toggle,
-    track_matches, year_label,
+    track_matches, view_mode_toggle, year_label,
 };
 use super::status::push_status;
 

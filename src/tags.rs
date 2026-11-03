@@ -165,7 +165,10 @@ fn clean(value: Option<&str>) -> Option<String> {
 pub fn principal_artist(artist: &str) -> String {
     const SUFFIXES: [&str; 4] = [" feat.", " featuring", " ft.", " ft "];
     let lower = artist.to_lowercase();
-    let cut = SUFFIXES.iter().filter_map(|suffix| lower.find(suffix)).min();
+    let cut = SUFFIXES
+        .iter()
+        .filter_map(|suffix| lower.find(suffix))
+        .min();
 
     match cut {
         Some(index) if lower.len() == artist.len() => artist[..index].trim().to_owned(),
