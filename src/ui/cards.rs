@@ -294,6 +294,10 @@ const LIST_THUMB: f32 = 48.0;
 const LIST_BUDGET: usize = 96;
 
 /// Fila compacta reutilizable: miniatura + títulos + clic igual que la tarjeta.
+///
+/// El botón usa `Button::Text` (no `Transparent`): en libcosmic la clase
+/// `Transparent` pasa un `text_color` en alpha 0 a todo el contenido hijo y
+/// borra el texto de la fila.
 fn list_row<'a>(
     thumb: Element<'a, Message>,
     title: &str,
@@ -303,10 +307,18 @@ fn list_row<'a>(
 ) -> Element<'a, Message> {
     let content = widget::row::with_capacity(2)
         .align_y(cosmic::iced::Alignment::Center)
+        .width(Length::Fill)
+        .height(Length::Shrink)
         .spacing(f32::from(spacing.space_m))
-        .push(widget::container(thumb).width(Length::Fixed(LIST_THUMB)))
+        .push(
+            widget::container(thumb)
+                .width(Length::Fixed(LIST_THUMB))
+                .height(Length::Shrink),
+        )
         .push(
             widget::column::with_capacity(2)
+                .width(Length::Fill)
+                .height(Length::Shrink)
                 .spacing(spacing.space_xxxs)
                 .push(title_block(ellipsize(title, LIST_BUDGET)))
                 .push(line_block(ellipsize(subtitle, LIST_BUDGET))),
@@ -315,11 +327,13 @@ fn list_row<'a>(
     widget::button::custom(
         widget::container(content)
             .width(Length::Fill)
+            .height(Length::Shrink)
             .padding(f32::from(spacing.space_xs)),
     )
-    .class(cosmic::theme::Button::Transparent)
+    .class(cosmic::theme::Button::Text)
     .padding(0)
     .width(Length::Fill)
+    .height(Length::Shrink)
     .on_press(on_press)
     .into()
 }
@@ -357,10 +371,16 @@ pub(super) fn album_list<'a>(
                 album.cover_ready,
             );
 
+            let subtitle = if album.artist.is_empty() {
+                album_subtitle(album)
+            } else {
+                format!("{} · {}", album.artist, album_subtitle(album))
+            };
+
             list_row(
                 thumb,
                 &album_title(album),
-                &album_subtitle(album),
+                &subtitle,
                 spacing,
                 Message::OpenAlbum(album.key.clone()),
             )
@@ -437,40 +457,25 @@ pub(super) fn book_list<'a>(
                 .filter(|author| !author.is_empty())
                 .map_or_else(|| fl!("unknown-author"), ToOwned::to_owned);
 
-            widget::button::custom(
-                widget::row::with_capacity(2)
-                    .align_y(cosmic::iced::Alignment::Center)
-                    .spacing(f32::from(spacing.space_m))
-                    .push(
-                        widget::container(thumb).width(Length::Fixed(LIST_THUMB)),
-                    )
-                    .push(
-                        widget::column::with_capacity(2)
-                            .spacing(spacing.space_xxxs)
-                            .push(title_block(ellipsize(
-                                &title,
-                                LIST_BUDGET,
-                            )))
-                            .push(line_block(ellipsize(
-                                &author,
-                                LIST_BUDGET,
-                            ))),
-                    ),
+            let label_title = title.clone();
+            let label_author = author.clone();
+
+            list_row(
+                thumb,
+                &label_title,
+                &label_author,
+                spacing,
+                Message::ItemClicked(Details {
+                    id: book.id,
+                    title,
+                    subtitle: author,
+                    path: book.path.clone(),
+                    cover_hash: book.metadata.cover_hash.clone(),
+                    cover_ready: book.cover_ready,
+                    kind: Kind::Book,
+                    open_action: book.open_action,
+                }),
             )
-            .class(cosmic::theme::Button::Transparent)
-            .padding(0)
-            .width(Length::Fill)
-            .on_press(Message::ItemClicked(Details {
-                id: book.id,
-                title,
-                subtitle: author,
-                path: book.path.clone(),
-                cover_hash: book.metadata.cover_hash.clone(),
-                cover_ready: book.cover_ready,
-                kind: Kind::Book,
-                open_action: book.open_action,
-            }))
-            .into()
         })
         .collect();
 
