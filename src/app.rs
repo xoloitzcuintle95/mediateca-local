@@ -10,9 +10,7 @@ use crate::covers;
 use crate::db::{self, CachedCatalog};
 use crate::fl;
 use crate::library::{AlbumKey, AliasMap, Library};
-use crate::model::{
-    Kind, MediaItem, OpenAction, ScanOutcome, ScanWarning, ViewMode,
-};
+use crate::model::{Kind, MediaItem, OpenAction, ScanOutcome, ScanWarning, ViewMode};
 use crate::opener;
 use crate::ui::{self, CatalogView};
 use crate::video::VideoLibrary;
@@ -218,8 +216,7 @@ impl cosmic::Application for AppModel {
                 Err((_errors, config)) => config,
             })
             .unwrap_or_default();
-        let view_mode =
-            ViewMode::from_config(&config.view_mode).unwrap_or_default();
+        let view_mode = ViewMode::from_config(&config.view_mode).unwrap_or_default();
 
         let mut app = AppModel {
             core,
@@ -999,8 +996,7 @@ const DOCUMENT_PORTAL_PREFIX: &str = "/run/flatpak/";
 fn catalog_root_from_path(path: &Path) -> Result<String, String> {
     // 1-2. Canonicalizar la ruta del selector: resuelve symlinks y montajes
     // del portal, y garantiza que las comparaciones de prefijo sean exactas.
-    let canonical =
-        fs::canonicalize(path).map_err(|_| fl!("catalog-folder-portal"))?;
+    let canonical = fs::canonicalize(path).map_err(|_| fl!("catalog-folder-portal"))?;
 
     // 3-4. Si después de canonicalizar sigue siendo una ruta del portal,
     // la carpeta no es utilizable: pedir una carpeta real.
@@ -1293,11 +1289,11 @@ mod tests {
         let _ = fs::remove_dir_all(&base);
         fs::create_dir_all(&base).unwrap();
 
-        let canonical = fs::canonicalize(&base).unwrap().to_string_lossy().into_owned();
-        assert_eq!(
-            catalog_root_from_path(&base).unwrap(),
-            canonical,
-        );
+        let canonical = fs::canonicalize(&base)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        assert_eq!(catalog_root_from_path(&base).unwrap(), canonical,);
 
         let _ = fs::remove_dir_all(&base);
     }
@@ -1344,8 +1340,21 @@ mod tests {
         let _ = fs::remove_dir_all(&base);
 
         // 4. Una carpeta inexistente falla: canonicalize no puede resolverla.
-        assert!(
-            catalog_root_from_path(Path::new("/definitivamente/no/existe/12345")).is_err()
-        );
+        assert!(catalog_root_from_path(Path::new("/definitivamente/no/existe/12345")).is_err());
+    }
+
+    #[test]
+    fn cambia_el_modo_de_vista() {
+        let mut app = app_con_detalles_abiertos();
+
+        let _ = app.update(Message::ViewModeChanged(ViewMode::List));
+
+        assert_eq!(app.view_mode, ViewMode::List);
+        assert_eq!(app.config.view_mode, String::from("list"));
+
+        let _ = app.update(Message::ViewModeChanged(ViewMode::Grid));
+
+        assert_eq!(app.view_mode, ViewMode::Grid);
+        assert_eq!(app.config.view_mode, String::from("grid"));
     }
 }

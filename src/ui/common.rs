@@ -43,36 +43,31 @@ pub(super) fn page_header<'a>(
 }
 
 /// Alternador de modo de vista: cuadrícula o lista. Tema-nativo; el activo
-/// usa el acento del tema.
-pub(super) fn view_mode_toggle<'a>(
-    mode: crate::model::ViewMode,
-) -> Element<'a, Message> {
+/// usa el acento del tema y el inactivo `Button::Text` (fondo transparente
+/// pero texto visible: `Button::Transparent` pinta el contenido en alpha 0).
+pub(super) fn view_mode_toggle<'a>(mode: crate::model::ViewMode) -> Element<'a, Message> {
     let grid_active = mode == crate::model::ViewMode::Grid;
     let list_active = mode == crate::model::ViewMode::List;
 
     widget::row::with_capacity(2)
         .spacing(spacing_from_static())
         .push(
-            widget::button::icon(
-                icon::from_name("view-grid-symbolic").size(16),
-            )
-            .class(if grid_active {
-                cosmic::theme::Button::Suggested
-            } else {
-                cosmic::theme::Button::Transparent
-            })
-            .on_press(Message::ViewModeChanged(crate::model::ViewMode::Grid)),
+            widget::button::icon(icon::from_name("view-grid-symbolic").size(16))
+                .class(if grid_active {
+                    cosmic::theme::Button::Suggested
+                } else {
+                    cosmic::theme::Button::Text
+                })
+                .on_press(Message::ViewModeChanged(crate::model::ViewMode::Grid)),
         )
         .push(
-            widget::button::icon(
-                icon::from_name("view-list-symbolic").size(16),
-            )
-            .class(if list_active {
-                cosmic::theme::Button::Suggested
-            } else {
-                cosmic::theme::Button::Transparent
-            })
-            .on_press(Message::ViewModeChanged(crate::model::ViewMode::List)),
+            widget::button::icon(icon::from_name("view-list-symbolic").size(16))
+                .class(if list_active {
+                    cosmic::theme::Button::Suggested
+                } else {
+                    cosmic::theme::Button::Text
+                })
+                .on_press(Message::ViewModeChanged(crate::model::ViewMode::List)),
         )
         .into()
 }
