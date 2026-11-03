@@ -11,6 +11,7 @@ use crate::app::Message;
 use crate::fl;
 use crate::library::AlbumEntry;
 use crate::model::{Kind, ViewMode};
+use crate::perf;
 
 use super::CatalogView;
 use super::cards::{album_grid, album_list};
@@ -22,12 +23,19 @@ pub(super) fn overview<'a>(
     query: &str,
     spacing: Spacing,
 ) -> Element<'a, Message> {
-    let albums: Vec<&AlbumEntry> = state
-        .library
-        .albums
-        .iter()
-        .filter(|album| album_matches(album, query))
-        .collect();
+    let _view_guard = perf::Timer::start("view.overview");
+
+    let albums: Vec<&AlbumEntry> = {
+        let filter_guard = perf::Timer::start("filter.overview");
+        let albums: Vec<&AlbumEntry> = state
+            .library
+            .albums
+            .iter()
+            .filter(|album| album_matches(album, query))
+            .collect();
+        drop(filter_guard);
+        albums
+    };
 
     let videos = count_kind(state.items, Kind::Video);
     let books = count_kind(state.items, Kind::Book);

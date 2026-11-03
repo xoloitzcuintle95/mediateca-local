@@ -10,6 +10,7 @@ mod library;
 mod media;
 mod model;
 mod opener;
+mod perf;
 mod scanner;
 mod tags;
 mod ui;
