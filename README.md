@@ -2,12 +2,10 @@
 
 A local media catalog for the COSMIC desktop. Point it at a folder and browse your music, videos and books in one place. It only reads your files, never touches them.
 
-<!-- Uncomment when docs/screenshot.png exists:
 ![Mediateca Local](docs/screenshot.png)
--->
 
 - **Read-only:** never writes to, moves or renames anything in your collection.
-- **Fully offline:** no network requests, no update checks, no telemetry.
+- **Fully offline:** no network requests, no update checks, no telemetry — the About dialog's only link opens your system browser; the app itself never connects.
 - **Native COSMIC look**, built with libcosmic.
 - **Opens items in your default app.**
 
@@ -33,8 +31,8 @@ just install    # install to ~/.local
 
 You need:
 
-- GNU/Linux with the COSMIC libraries
-- Rust >= 1.93 (via rustup; the pinned libcosmic revision requires it)
+- GNU/Linux with the [COSMIC](https://github.com/pop-os/cosmic-epoch) libraries
+- Rust >= 1.93 (via [rustup](https://rustup.rs/); the pinned libcosmic revision requires it)
 - [just](https://github.com/casey/just)
 - A C compiler (`build-essential` on Pop!_OS/Ubuntu), needed to build `mimalloc`
 
@@ -50,15 +48,15 @@ It scans one folder, reads tags and embedded covers from your existing files, an
 | Video | mkv, mp4, avi  | identified by file name (SxxEyy); no posters |
 | Books | epub, pdf      | epub metadata and covers; pdf listed plainly |
 
-The catalog database lives in `~/.local/share/com.xoloitzcuintle95.MediatecaLocal/` and the cover thumbnails in `~/.cache/com.xoloitzcuintle95.MediatecaLocal/`; the chosen folder is saved in your XDG config. Deleting those directories resets the catalog and the cover cache — the app never touches the files in your collection.
+The catalog database lives in `~/.local/share/com.xoloitzcuintle95.MediatecaLocal/` and the cover thumbnails in `~/.cache/com.xoloitzcuintle95.MediatecaLocal/`; the chosen folder is saved in `~/.config/cosmic/com.xoloitzcuintle95.MediatecaLocal/`. Deleting those directories resets the catalog and the cover cache — the app never touches the files in your collection.
 
 ## Getting good results
 
 Mediateca Local does not fetch metadata from the internet and does not read NFO files or movie posters. It relies on the tags and file names your files already have. Before importing, it is worth tidying your collection with:
 
-- **Music:** MusicBrainz Picard (accurate artist/album/title tags and embedded art)
-- **Video:** tinyMediaManager (consistent `Series SxxEyy` file names)
-- **Books:** Calibre (proper EPUB metadata)
+- **Music:** [MusicBrainz Picard](https://picard.musicbrainz.org/) (accurate artist/album/title tags and embedded art)
+- **Video:** [tinyMediaManager](https://www.tinyMediaManager.org/) (consistent `Series SxxEyy` file names)
+- **Books:** [Calibre](https://calibre-ebook.com/) (proper EPUB metadata)
 
 ## Known limitations
 
@@ -73,7 +71,7 @@ Mediateca Local does not fetch metadata from the internet and does not read NFO 
 
 ## Built with AI assistance
 
-This project was built with the help of AI coding models, and reviewed through tests and daily use. See `AGENTS.md` for the project rules.
+This project was built with the help of AI coding models, and reviewed through tests and daily use. See [AGENTS.md](./AGENTS.md) for the project rules.
 
 <details>
 <summary>For developers</summary>
@@ -84,7 +82,7 @@ This project was built with the help of AI coding models, and reviewed through t
 cargo test
 ```
 
-**Contributing.** Issues are welcome. `AGENTS.md` describes the project's rules for anyone (human or AI) working on it.
+**Contributing.** Issues are welcome. [AGENTS.md](./AGENTS.md) describes the project's rules for anyone (human or AI) working on it.
 
 **Translations.** Fluent files in `i18n/` (en and es).
 
