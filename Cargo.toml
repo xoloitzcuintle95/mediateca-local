@@ -1,6 +1,6 @@
 [package]
 name = "mediateca-local"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 # Verified: `CARGO_TARGET_DIR=/tmp/target-193 cargo +1.93 check --locked` passes;
 # 1.88 fails because libcosmic@1.0.0 (pinned rev) requires rustc 1.93.
