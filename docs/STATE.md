@@ -1,6 +1,6 @@
 # Project state — Mediateca Local
 
-Reference commit: **`f043b7c`** (`Translate public docs to English, polish README`), no new commit yet. In this pass this document was translated to English; all in-repo documents are now English-only. It was also decided NOT to create a wiki: all content lives in README/TODO/STATE inside the repo. Clippy and `cargo test` (80 tests) pass.
+Reference commit: **`ad40edc`** (`Revert "perf: timer load.cached y RSS del proceso (MEDIATECA_PERF, temporal)"`), no new commit yet. The three temporary commits from the scaling session (MEDIATECA_PERF instrumentation, synthetic `seed` generator, load timer + RSS) were reverted before publishing; the pagination commit `32c1625` stays. Clippy and `cargo test` (**100 tests**: 94 base + 6 pagination) pass.
 
 Limit of this document: **200 lines**.
 
@@ -92,7 +92,7 @@ Migrations: add columns, rename `artist→creator`, `album_artist→collection_c
 ## 6. Decisions made
 
 - **Read-only / no network:** the collection is never written to; lofty and rbook are used only for reading; no HTTP clients.
-- **Covers:** bars are detected by comparing with the border color (tolerance 12/255). In the initial inspection, 31/31 had 276–280 px bars and a 720–728×720 interior. Music 1:1 (512×512); without bars, `fit`; video/books 2:3 (512×768). Cache v2; v1 16:9 unused. The book cover moves ~50% more pixels than the square one (393,216 vs 262,144); not optimized. All sources go through `covers::ensure_thumbnail`, which rejects more than 8 MiB or 8 MP before hashing or decoding, requires dimensions greater than zero and uses a limits-capped `ImageReader`. `local_cover` checks the size with `fs::metadata` before reading the file. Music's embedded cover was already loaded into memory by lofty; the filter avoids the second copy but cannot avoid that first load.
+- **Covers:** bars are detected by comparing with the border color (tolerance 12/255). In the initial inspection, 31/31 had 276–280 px bars and a 720–728×720 interior. Music 1:1 (**320×320** since the scaling pass; previously 512×512); without bars, `fit`; video/books 2:3 (**320×480**, derived from `THUMBNAIL_WIDTH`). Cache **v3** (`THUMBNAIL_VERSION`); v2 (512 px) and v1 16:9 unused — stale folders are simply abandoned in the cache, not deleted. The book cover moves ~50% more pixels than the square one; not optimized. All sources go through `covers::ensure_thumbnail`, which rejects more than 8 MiB or 8 MP before hashing or decoding, requires dimensions greater than zero and uses a limits-capped `ImageReader`. `local_cover` checks the size with `fs::metadata` before reading the file. Music's embedded cover was already loaded into memory by lofty; the filter avoids the second copy but cannot avoid that first load.
 - **EPUB:** `rbook 0.7.12` with no features; reads title, authors and cover. Cover limited to 8 MiB and 8 MP; a corrupt or metadata-less EPUB falls back to the file name and `TagStatus::Error`/`Missing`. `catch_unwind` isolates possible panics. `creator` stores the author and `title` the title; no schema change.
 - **Aliases:** editable table, case-insensitive; applied when grouping by `collection_creator`.
 - **Media types:** `src/media.rs` is the single source of extensions, aspect, hierarchy and `OpenAction`.
@@ -106,6 +106,7 @@ Migrations: add columns, rename `artist→creator`, `album_artist→collection_c
 - **Video:** file name as the only source; `SxxEyy`; variants of the same episode grouped; movies with no separate pattern; icons, not posters.
 - **Generic columns:** `creator` and `collection` replace `artist`/`album` in the model and SQLite.
 - **Optimization:** `cover_ready` avoids `fs::metadata` per card; search keys are precomputed lowercase; a single connection for aliases; thumbnail pool.
+- **Scaling pass (this session):** overview pagination — cached filter in `update` (`overview_visible` indices + `overview_page`), `PAGE_SIZE = 60`, page bar (First/Previous/Next/Last) below the scrollable, scroll reset via `scrollable::scroll_to` with a fixed `Id`, page 0 on search/nav/scan, clamp in `rebuild_library` and reset in `clear_catalog`. Memory: `mimalloc` global allocator; release profile `opt-level="z"`, LTO, 1 codegen unit, `strip`, `panic="unwind"` (unwind is required so `catch_unwind` can contain scanner panics — `abort` defeats it). Thumbnails 512→320 px cut the RSS from ~244 to ~192 MB; wgpu was kept (~145 MB of the total) after a tiny-skia experiment measured ~45 MB. A temporary perf instrumentation and a synthetic-catalog generator lived in dedicated commits and were **reverted** before publishing (recoverable from history).
 - **Debt:** `ScanWarning` covers scan, opening and invalid root; the name is no longer exact and renaming it is pending.
 
 ## 7. What is NOT done
@@ -159,7 +160,7 @@ The first-scan improvement was ~32%. The second scan is measurement noise (~ms).
 
 **`fadvise` (Linux only):** lofty already read only the tag, but kernel *readahead* pulled ~5.6× more data: **1,088 → 195 MiB** with `POSIX_FADV_RANDOM`. Still, the wall-clock gain is moderate because random seeks persist. **User's cold measurement with 4 threads: ~22.6 s vs ~26.5 s originally (~15%).** The remaining bottleneck is disk seek time. **First-import progress is still pending.**
 
-Incremental `cargo build --release`: ~28 s. `cargo check`, `cargo clippy --all-targets -- -D warnings` and **80 tests** pass.
+Incremental `cargo build --release`: ~28 s. `cargo check`, `cargo clippy --all-targets -- -D warnings` and **100 tests** pass.
 
 User measurements with the release binary and the GUI open, **point-in-time**:
 
